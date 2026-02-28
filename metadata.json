@@ -1,0 +1,5 @@
+{
+  "name": "iFoneLab Tessera fedeltà",
+  "description": "A loyalty points application where customers can earn points by showing a QR code to merchants.",
+  "requestFramePermissions": ["camera"]
+}
