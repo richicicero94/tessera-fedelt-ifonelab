@@ -27,6 +27,19 @@ db.exec(`
   )
 `);
 
+// Seed default merchant
+const seedMerchant = async () => {
+  const email = 'ifonelab1@gmail.com';
+  const password = 'admin1';
+  const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  if (!existing) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(email, hashedPassword, 'merchant');
+    console.log('Default merchant seeded');
+  }
+};
+seedMerchant();
+
 async function startServer() {
   const app = express();
   app.use(express.json());
@@ -102,6 +115,12 @@ async function startServer() {
     db.prepare('UPDATE users SET points = points + ? WHERE loyalty_code = ?').run(points, loyaltyCode);
     
     res.json({ message: `Added ${points} points to ${user.email}`, newPoints: user.points + points });
+  });
+
+  app.get('/api/merchant/customers', authenticateToken, (req: any, res) => {
+    if (req.user.role !== 'merchant') return res.status(403).json({ error: 'Only merchants can view customers' });
+    const customers = db.prepare('SELECT id, email, loyalty_code, points, created_at FROM users WHERE role = "customer" ORDER BY points DESC').all();
+    res.json(customers);
   });
 
   // Vite middleware for development

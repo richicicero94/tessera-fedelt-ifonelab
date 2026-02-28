@@ -298,6 +298,21 @@ const MerchantDashboard = () => {
   const [scanning, setScanning] = useState(false);
   const [pointsToAdd, setPointsToAdd] = useState(10);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const fetchCustomers = async () => {
+    try {
+      const res = await api.get('/merchant/customers');
+      setCustomers(res.data);
+    } catch (err) {
+      console.error('Failed to fetch customers', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   useEffect(() => {
     let scanner: Html5QrcodeScanner | null = null;
@@ -319,6 +334,7 @@ const MerchantDashboard = () => {
             points: pointsToAdd
           });
           setMessage({ text: res.data.message, type: 'success' });
+          fetchCustomers(); // Refresh list
         } catch (err: any) {
           setMessage({ text: err.response?.data?.error || 'Errore durante l\'assegnazione punti', type: 'error' });
         }
@@ -333,6 +349,11 @@ const MerchantDashboard = () => {
       }
     };
   }, [scanning, pointsToAdd]);
+
+  const filteredCustomers = customers.filter(c => 
+    c.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (c.loyalty_code && c.loyalty_code.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="max-w-md mx-auto space-y-6">
@@ -401,17 +422,38 @@ const MerchantDashboard = () => {
         </AnimatePresence>
       </div>
 
-      <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
-        <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4">Statistiche Oggi</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-2xl font-bold text-zinc-900">12</p>
-            <p className="text-xs text-zinc-500">Clienti serviti</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-zinc-900">850</p>
-            <p className="text-xs text-zinc-500">Punti totali</p>
-          </div>
+      <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-bold text-zinc-900">Lista Clienti</h3>
+          <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">{customers.length}</span>
+        </div>
+
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Cerca per email o codice..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 text-sm rounded-xl border border-zinc-100 bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          />
+        </div>
+
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+          {filteredCustomers.map(customer => (
+            <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
+              <div className="flex justify-between items-start mb-1">
+                <p className="text-sm font-semibold text-zinc-900 truncate max-w-[180px]">{customer.email}</p>
+                <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                  <Award className="w-3 h-3" />
+                  {customer.points} pts
+                </div>
+              </div>
+              <p className="text-[10px] font-mono text-zinc-400">{customer.loyalty_code?.substring(0, 18)}...</p>
+            </div>
+          ))}
+          {filteredCustomers.length === 0 && (
+            <p className="text-center text-zinc-400 text-sm py-8">Nessun cliente trovato</p>
+          )}
         </div>
       </div>
     </div>
