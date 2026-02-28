@@ -56,8 +56,12 @@ async function startServer() {
       
       const stmt = db.prepare('INSERT INTO users (email, password, role, loyalty_code) VALUES (?, ?, ?, ?)');
       const result = stmt.run(email, hashedPassword, role || 'customer', loyaltyCode);
+      const userId = result.lastInsertRowid;
+
+      const user = { id: userId, email, role: role || 'customer', loyalty_code: loyaltyCode };
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
       
-      res.status(201).json({ message: 'User created successfully', userId: result.lastInsertRowid });
+      res.status(201).json({ message: 'User created successfully', token, user });
     } catch (error: any) {
       if (error.message.includes('UNIQUE constraint failed: users.email')) {
         return res.status(400).json({ error: 'Email already exists' });

@@ -123,20 +123,24 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
   );
 };
 
-const Signup = () => {
+const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'customer' | 'merchant'>('customer');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<any>(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/auth/signup', { email, password, role });
-      setSuccess(true);
-      setTimeout(() => navigate('/login'), 2000);
+      const res = await api.post('/auth/signup', { email, password, role });
+      setSuccessData(res.data);
+      // Auto login after 3 seconds or when they click a button
+      setTimeout(() => {
+        onLogin(res.data.token, res.data.user);
+        navigate('/');
+      }, 5000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Errore durante la registrazione');
     }
@@ -149,11 +153,31 @@ const Signup = () => {
       className="max-w-md mx-auto mt-12 p-8 bg-white rounded-3xl shadow-sm border border-zinc-100"
     >
       <h2 className="text-2xl font-bold mb-6 text-zinc-900">Crea Account</h2>
-      {success ? (
-        <div className="text-center py-8">
+      {successData ? (
+        <div className="text-center py-4">
           <ShieldCheck className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
           <p className="text-lg font-medium text-zinc-900">Registrazione completata!</p>
-          <p className="text-zinc-500">Verrai reindirizzato al login...</p>
+          
+          {successData.user.role === 'customer' && (
+            <div className="mt-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+              <p className="text-sm text-zinc-500 mb-2">Il tuo Codice Tessera Fedeltà:</p>
+              <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.user.loyalty_code}</p>
+              <div className="mt-4 flex justify-center">
+                <QRCodeSVG value={successData.user.loyalty_code} size={120} />
+              </div>
+            </div>
+          )}
+          
+          <p className="text-zinc-400 text-xs mt-6">Verrai reindirizzato alla tua area personale tra pochi secondi...</p>
+          <button 
+            onClick={() => {
+              onLogin(successData.token, successData.user);
+              navigate('/');
+            }}
+            className="mt-4 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+          >
+            Vai alla Dashboard ora
+          </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,7 +230,7 @@ const Signup = () => {
           </button>
         </form>
       )}
-      {!success && (
+      {!successData && (
         <p className="mt-6 text-center text-sm text-zinc-500">
           Hai già un account? <Link to="/login" className="text-emerald-600 font-medium hover:underline">Accedi</Link>
         </p>
@@ -459,7 +483,7 @@ export default function App() {
               }
             />
             <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
-            <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
+            <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/" />} />
           </Routes>
         </main>
       </div>
