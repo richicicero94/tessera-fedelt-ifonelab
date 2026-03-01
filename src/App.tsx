@@ -8,7 +8,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 
 // --- Types ---
 interface UserProfile {
-  id: number;
+  id: string | number;
   email: string;
   role: 'customer' | 'merchant';
   loyalty_code: string | null;
@@ -469,8 +469,14 @@ export default function App() {
   const fetchProfile = async () => {
     try {
       const res = await api.get('/user/profile');
-      setUser(res.data);
+      if (res.data && res.data.email) {
+        setUser(res.data);
+      } else {
+        throw new Error('Invalid profile data');
+      }
     } catch (err) {
+      console.error('Profile fetch error:', err);
+      localStorage.removeItem('token');
       setUser(null);
     } finally {
       setLoading(false);
