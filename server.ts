@@ -170,7 +170,7 @@ app.get('/api/merchant/customers', authenticateToken, async (req: any, res) => {
 
 // Vite middleware for development
 async function setupVite() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -178,7 +178,6 @@ async function setupVite() {
     });
     app.use(vite.middlewares);
   } else if (!process.env.VERCEL) {
-    // Only serve static files if NOT on Vercel (Vercel handles this via rewrites)
     app.use(express.static(path.join(__dirname, 'dist')));
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
