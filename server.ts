@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import Database from 'better-sqlite3';
+import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
@@ -13,29 +13,37 @@ const __dirname = path.dirname(__filename);
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'loyalty-secret-key-123';
 
-// Database setup
-const db = new Database('loyalty.db');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'customer', -- 'customer' or 'merchant'
-    loyalty_code TEXT UNIQUE,
-    points INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+// Supabase setup
+const supabaseUrl = process.env.SUPABASE_URL || 'https://tytxjcrcnjvszljbmyos.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!supabaseKey) {
+  console.error('ERRORE: SUPABASE_SERVICE_ROLE_KEY non trovata nei Secrets!');
+}
+const supabase = createClient(supabaseUrl, supabaseKey || '');
 
 // Seed default merchant
 const seedMerchant = async () => {
+  if (!supabaseUrl || !supabaseKey) {
+    console.log('Supabase credentials missing, skipping seed');
+    return;
+  }
   const email = 'ifonelab1@gmail.com';
   const password = 'admin1';
-  const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  
+  const { data: existing } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .single();
+
   if (!existing) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)').run(email, hashedPassword, 'merchant');
-    console.log('Default merchant seeded');
+    const { error } = await supabase
+      .from('users')
+      .insert([{ email, password: hashedPassword, role: 'merchant' }]);
+    
+    if (error) console.error('Error seeding merchant:', error.message);
+    else console.log('Default merchant seeded');
   }
 };
 seedMerchant();
@@ -67,27 +75,43 @@ async function startServer() {
       const hashedPassword = await bcrypt.hash(password, 10);
       const loyaltyCode = role === 'merchant' ? null : crypto.randomUUID();
       
-      const stmt = db.prepare('INSERT INTO users (email, password, role, loyalty_code) VALUES (?, ?, ?, ?)');
-      const result = stmt.run(email, hashedPassword, role || 'customer', loyaltyCode);
-      const userId = result.lastInsertRowid;
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{ 
+          email, 
+          password: hashedPassword, 
+          role: role || 'customer', 
+          loyalty_code: loyaltyCode,
+          points: 0
+        }])
+        .select()
+        .single();
 
-      const user = { id: userId, email, role: role || 'customer', loyalty_code: loyaltyCode };
+      if (error) {
+        if (error.code === '23505') return res.status(400).json({ error: 'Email already exists' });
+        throw error;
+      }
+
+      const user = { id: data.id, email: data.email, role: data.role, loyalty_code: data.loyalty_code };
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
       
       res.status(201).json({ message: 'User created successfully', token, user });
     } catch (error: any) {
-      if (error.message.includes('UNIQUE constraint failed: users.email')) {
-        return res.status(400).json({ error: 'Email already exists' });
-      }
+      console.error('Signup error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
 
   app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (error || !user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -96,30 +120,54 @@ async function startServer() {
   });
 
   // User Routes
-  app.get('/api/user/profile', authenticateToken, (req: any, res) => {
-    const user = db.prepare('SELECT id, email, role, loyalty_code, points FROM users WHERE id = ?').get(req.user.id) as any;
-    if (!user) return res.status(404).json({ error: 'User not found' });
+  app.get('/api/user/profile', authenticateToken, async (req: any, res) => {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, role, loyalty_code, points')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   });
 
   // Merchant Routes
-  app.post('/api/merchant/add-points', authenticateToken, (req: any, res) => {
+  app.post('/api/merchant/add-points', authenticateToken, async (req: any, res) => {
     if (req.user.role !== 'merchant') return res.status(403).json({ error: 'Only merchants can add points' });
 
     const { loyaltyCode, points } = req.body;
     if (!loyaltyCode || points === undefined) return res.status(400).json({ error: 'Loyalty code and points required' });
 
-    const user = db.prepare('SELECT * FROM users WHERE loyalty_code = ?').get(loyaltyCode) as any;
-    if (!user) return res.status(404).json({ error: 'Customer not found' });
+    // Get current points
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('loyalty_code', loyaltyCode)
+      .single();
 
-    db.prepare('UPDATE users SET points = points + ? WHERE loyalty_code = ?').run(points, loyaltyCode);
+    if (fetchError || !user) return res.status(404).json({ error: 'Customer not found' });
+
+    const newPoints = (user.points || 0) + points;
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ points: newPoints })
+      .eq('loyalty_code', loyaltyCode);
+
+    if (updateError) return res.status(500).json({ error: 'Failed to update points' });
     
-    res.json({ message: `Added ${points} points to ${user.email}`, newPoints: user.points + points });
+    res.json({ message: `Added ${points} points to ${user.email}`, newPoints });
   });
 
-  app.get('/api/merchant/customers', authenticateToken, (req: any, res) => {
+  app.get('/api/merchant/customers', authenticateToken, async (req: any, res) => {
     if (req.user.role !== 'merchant') return res.status(403).json({ error: 'Only merchants can view customers' });
-    const customers = db.prepare('SELECT id, email, loyalty_code, points, created_at FROM users WHERE role = "customer" ORDER BY points DESC').all();
+    
+    const { data: customers, error } = await supabase
+      .from('users')
+      .select('id, email, loyalty_code, points, created_at')
+      .eq('role', 'customer')
+      .order('points', { ascending: false });
+
+    if (error) return res.status(500).json({ error: 'Failed to fetch customers' });
     res.json(customers);
   });
 
