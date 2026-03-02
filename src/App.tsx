@@ -240,6 +240,9 @@ const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) =>
 };
 
 const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refreshProfile: () => void }) => {
+  const points = user.points || 0;
+  const loyaltyCode = user.loyalty_code || '';
+
   return (
     <div className="max-w-md mx-auto space-y-6">
       <motion.div
@@ -249,7 +252,7 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
       >
         <div className="relative z-10">
           <p className="text-zinc-400 text-sm font-medium uppercase tracking-wider mb-1">Punti Fedeltà</p>
-          <h2 className="text-6xl font-bold tracking-tighter mb-4">{user.points}</h2>
+          <h2 className="text-6xl font-bold tracking-tighter mb-4">{points}</h2>
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
             <Award className="w-4 h-4" />
             <span>Livello Bronzo</span>
@@ -267,17 +270,21 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         <h3 className="text-lg font-bold text-zinc-900 mb-2">Il Tuo Codice</h3>
         <p className="text-zinc-500 text-sm mb-6">Mostra questo codice al commerciante per ricevere punti</p>
         <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100">
-          {user.loyalty_code && (
+          {loyaltyCode ? (
             <QRCodeSVG
-              value={user.loyalty_code}
+              value={loyaltyCode}
               size={200}
               level="H"
               includeMargin={true}
               className="mx-auto"
             />
+          ) : (
+            <div className="w-[200px] h-[200px] flex items-center justify-center text-zinc-400 italic">
+              Codice non disponibile
+            </div>
           )}
         </div>
-        <p className="mt-4 font-mono text-xs text-zinc-400">{user.loyalty_code}</p>
+        <p className="mt-4 font-mono text-xs text-zinc-400">{loyaltyCode}</p>
       </motion.div>
 
       <div className="grid grid-cols-2 gap-4">

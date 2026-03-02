@@ -13,12 +13,17 @@ const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'loyalty-secret-key-123';
 
 // Supabase setup
-const supabaseUrl = process.env.SUPABASE_URL || 'https://tytxjcrcnjvszljbmyos.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!supabaseKey) {
-  console.error('ERRORE: SUPABASE_SERVICE_ROLE_KEY non trovata nei Secrets!');
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+
+if (!supabaseUrl) {
+  console.error('❌ ERRORE CRITICO: SUPABASE_URL non trovata!');
 }
-const supabase = createClient(supabaseUrl, supabaseKey || '');
+if (!supabaseKey) {
+  console.error('❌ ERRORE CRITICO: SUPABASE_SERVICE_ROLE_KEY non trovata!');
+}
+
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 // Seed default merchant
 const seedMerchant = async () => {
@@ -102,19 +107,32 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
+  console.log(`Tentativo di login per: ${email}`);
   
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', email)
-    .single();
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
 
-  if (error || !user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    if (error) {
+      console.error('Errore durante la ricerca utente:', error.message);
+      return res.status(401).json({ error: 'Utente non trovato o errore database' });
+    }
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      console.warn('Password errata o utente inesistente');
+      return res.status(401).json({ error: 'Credenziali non valide' });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    console.log('Login effettuato con successo');
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  } catch (err: any) {
+    console.error('Errore imprevisto durante il login:', err.message);
+    res.status(500).json({ error: 'Errore interno del server' });
   }
-
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-  res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
 });
 
 // User Routes
