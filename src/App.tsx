@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
@@ -304,6 +304,7 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
 const MerchantDashboard = () => {
   const [scanning, setScanning] = useState(false);
   const [pointsToAdd, setPointsToAdd] = useState(10);
+  const [mode, setMode] = useState<'add' | 'subtract'>('add');
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -328,7 +329,13 @@ const MerchantDashboard = () => {
     if (scanning) {
       scanner = new Html5QrcodeScanner(
         "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          videoConstraints: {
+            facingMode: "environment"
+          }
+        },
         /* verbose= */ false
       );
 
@@ -337,14 +344,15 @@ const MerchantDashboard = () => {
         if (scanner) scanner.clear();
         
         try {
+          const pointsToSubmit = mode === 'add' ? pointsToAdd : -pointsToAdd;
           const res = await api.post('/merchant/add-points', {
             loyaltyCode: decodedText,
-            points: pointsToAdd
+            points: pointsToSubmit
           });
           setMessage({ text: res.data.message, type: 'success' });
           fetchCustomers(); // Refresh list
         } catch (err: any) {
-          setMessage({ text: err.response?.data?.error || 'Errore durante l\'assegnazione punti', type: 'error' });
+          setMessage({ text: err.response?.data?.error || 'Errore durante l\'operazione', type: 'error' });
         }
       }, (error) => {
         // console.warn(error);
@@ -356,7 +364,7 @@ const MerchantDashboard = () => {
         scanner.clear().catch(e => console.error("Failed to clear scanner", e));
       }
     };
-  }, [scanning, pointsToAdd]);
+  }, [scanning, pointsToAdd, mode]);
 
   const filteredCustomers = customers.filter(c => 
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -371,26 +379,47 @@ const MerchantDashboard = () => {
           Pannello Commerciante
         </h2>
 
-        <div className="space-y-4 mb-8">
-          <label className="block text-sm font-medium text-zinc-700">Punti da assegnare</label>
-          <div className="flex gap-2">
-            {[10, 20, 50, 100].map(val => (
-              <button
-                key={val}
-                onClick={() => setPointsToAdd(val)}
-                className={`flex-1 py-2 rounded-xl border text-sm font-bold transition-all ${pointsToAdd === val ? 'bg-zinc-900 border-zinc-900 text-white' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
-              >
-                +{val}
-              </button>
-            ))}
+        <div className="space-y-6 mb-8">
+          <div className="flex p-1 bg-zinc-100 rounded-2xl">
+            <button
+              onClick={() => setMode('add')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'add' ? 'bg-white text-emerald-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+            >
+              <Plus className="w-4 h-4" />
+              Aggiungi
+            </button>
+            <button
+              onClick={() => setMode('subtract')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'subtract' ? 'bg-white text-red-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+            >
+              <Minus className="w-4 h-4" />
+              Sottrai
+            </button>
           </div>
-          <input
-            type="number"
-            value={pointsToAdd}
-            onChange={(e) => setPointsToAdd(parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-            placeholder="Altro importo..."
-          />
+
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-zinc-700">
+              {mode === 'add' ? 'Punti da aggiungere' : 'Punti da togliere'}
+            </label>
+            <div className="flex gap-2">
+              {[10, 20, 50, 100].map(val => (
+                <button
+                  key={val}
+                  onClick={() => setPointsToAdd(val)}
+                  className={`flex-1 py-2 rounded-xl border text-sm font-bold transition-all ${pointsToAdd === val ? (mode === 'add' ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-red-600 border-red-600 text-white') : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              value={pointsToAdd}
+              onChange={(e) => setPointsToAdd(Math.abs(parseInt(e.target.value) || 0))}
+              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              placeholder="Altro importo..."
+            />
+          </div>
         </div>
 
         {!scanning ? (
@@ -399,14 +428,14 @@ const MerchantDashboard = () => {
               setMessage(null);
               setScanning(true);
             }}
-            className="w-full bg-emerald-600 text-white py-6 rounded-3xl font-bold text-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex flex-col items-center gap-2"
+            className={`w-full text-white py-6 rounded-3xl font-bold text-lg transition-all shadow-lg flex flex-col items-center gap-2 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'}`}
           >
             <QrCode className="w-8 h-8" />
-            Scansiona Codice
+            {mode === 'add' ? 'Aggiungi Punti' : 'Sottrai Punti'}
           </button>
         ) : (
           <div className="space-y-4">
-            <div id="reader" className="overflow-hidden rounded-2xl border-2 border-emerald-500"></div>
+            <div id="reader" className={`overflow-hidden rounded-2xl border-2 ${mode === 'add' ? 'border-emerald-500' : 'border-red-500'}`}></div>
             <button
               onClick={() => setScanning(false)}
               className="w-full bg-zinc-100 text-zinc-600 py-3 rounded-xl font-medium hover:bg-zinc-200 transition-colors"
