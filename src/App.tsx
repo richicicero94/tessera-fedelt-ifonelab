@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import axios from 'axios';
+import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
@@ -15,19 +15,6 @@ interface UserProfile {
   points: number;
   phone?: string;
 }
-
-// --- API Helper ---
-const api = axios.create({
-  baseURL: '/api',
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 // --- Components ---
 
@@ -68,7 +55,7 @@ const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => 
   );
 };
 
-const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => {
+const Login = ({ onLogin }: { onLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -82,11 +69,19 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.post('/auth/login', { email, password });
-      onLogin(res.data.token, res.data.user);
-      navigate('/');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      
+      if (data.session) {
+        onLogin();
+        navigate('/');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Errore durante l\'accesso');
+      setError(err.message || 'Errore durante l\'accesso');
     }
   };
 
@@ -94,14 +89,13 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
     e.preventDefault();
     setError('');
     try {
-      const res = await api.post('/auth/forgot-password', { email });
-      setMessage(res.data.message);
-      if (res.data.debugToken) {
-        alert('DEBUG: Il tuo codice di reset è ' + res.data.debugToken);
-      }
-      setResetStep('reset');
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/login',
+      });
+      if (error) throw error;
+      setMessage('Controlla la tua email per il link di reset!');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Errore durante la richiesta');
+      setError(err.message || 'Errore durante la richiesta');
     }
   };
 
@@ -109,12 +103,13 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
     e.preventDefault();
     setError('');
     try {
-      await api.post('/auth/reset-password', { email, token: resetToken, newPassword });
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
       setMessage('Password aggiornata! Ora puoi accedere.');
       setForgotPassword(false);
       setResetStep('request');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Errore durante il reset');
+      setError(err.message || 'Errore durante il reset');
     }
   };
 
@@ -257,7 +252,7 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
   );
 };
 
-const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => {
+const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'customer' | 'merchant'>('customer');
@@ -267,16 +262,44 @@ const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
-      const res = await api.post('/auth/signup', { email, password, role });
-      setSuccessData(res.data);
-      // Auto login after 3 seconds or when they click a button
-      setTimeout(() => {
-        onLogin(res.data.token, res.data.user);
-        navigate('/');
-      }, 5000);
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        const loyaltyCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: authData.user.id, 
+              email: email, 
+              role: role, 
+              points: 0, 
+              loyalty_code: loyaltyCode 
+            }
+          ]);
+
+        if (profileError) throw profileError;
+
+        setSuccessData({
+          email: email,
+          loyalty_code: loyaltyCode
+        });
+
+        // Auto login after a few seconds
+        setTimeout(() => {
+          onLogin();
+          navigate('/');
+        }, 3000);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Errore durante la registrazione');
+      setError(err.message || 'Errore durante la registrazione');
     }
   };
 
@@ -300,12 +323,12 @@ const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) =>
           <ShieldCheck className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
           <p className="text-lg font-medium text-zinc-900">Registrazione completata!</p>
           
-          {successData.user.role === 'customer' && (
+          {successData.loyalty_code && (
             <div className="mt-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
               <p className="text-sm text-zinc-500 mb-2">Il tuo Codice Tessera Fedeltà:</p>
-              <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.user.loyalty_code}</p>
+              <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.loyalty_code}</p>
               <div className="mt-4 flex justify-center">
-                <QRCodeSVG value={successData.user.loyalty_code} size={120} />
+                <QRCodeSVG value={successData.loyalty_code} size={120} />
               </div>
             </div>
           )}
@@ -313,7 +336,7 @@ const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) =>
           <p className="text-zinc-400 text-xs mt-6">Verrai reindirizzato alla tua area personale tra pochi secondi...</p>
           <button 
             onClick={() => {
-              onLogin(successData.token, successData.user);
+              onLogin();
               navigate('/');
             }}
             className="mt-4 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
@@ -393,7 +416,13 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
     setIsUpdating(true);
     setMessage(null);
     try {
-      await api.post('/user/update-phone', { phone });
+      const { error } = await supabase
+        .from('profiles')
+        .update({ phone })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
       setMessage({ text: 'Ora sei abilitato a ricevere le nostre promozioni', type: 'success' });
       refreshProfile();
     } catch (err) {
@@ -528,8 +557,14 @@ const MerchantDashboard = () => {
 
   const fetchCustomers = async () => {
     try {
-      const res = await api.get('/merchant/customers');
-      setCustomers(Array.isArray(res.data) ? res.data : []);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'customer')
+        .order('points', { ascending: false });
+
+      if (error) throw error;
+      setCustomers(data || []);
     } catch (err) {
       console.error('Failed to fetch customers', err);
       setCustomers([]);
@@ -648,14 +683,29 @@ const MerchantDashboard = () => {
         
         try {
           const pointsToSubmit = mode === 'add' ? pointsToAdd : -pointsToAdd;
-          const res = await api.post('/merchant/add-points', {
-            loyaltyCode: decodedText,
-            points: pointsToSubmit
-          });
-          setMessage({ text: res.data.message, type: 'success' });
+          
+          // 1. Find customer by loyalty code
+          const { data: customer, error: findError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('loyalty_code', decodedText)
+            .single();
+
+          if (findError || !customer) throw new Error('Cliente non trovato');
+
+          // 2. Update points
+          const newPoints = Math.max(0, (customer.points || 0) + pointsToSubmit);
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ points: newPoints })
+            .eq('id', customer.id);
+
+          if (updateError) throw updateError;
+
+          setMessage({ text: `Punti aggiornati con successo! Nuovo saldo: ${newPoints}`, type: 'success' });
           fetchCustomers(); // Refresh list
         } catch (err: any) {
-          setMessage({ text: err.response?.data?.error || 'Errore durante l\'operazione', type: 'error' });
+          setMessage({ text: err.message || 'Errore durante l\'operazione', type: 'error' });
         }
       }, (error) => {
         // console.warn(error);
@@ -943,15 +993,24 @@ export default function App() {
 
   const fetchProfile = async () => {
     try {
-      const res = await api.get('/user/profile');
-      if (res.data && res.data.email) {
-        setUser(res.data);
-      } else {
-        throw new Error('Invalid profile data');
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (profile) {
+        setUser(profile);
       }
     } catch (err) {
       console.error('Profile fetch error:', err);
-      localStorage.removeItem('token');
       setUser(null);
     } finally {
       setLoading(false);
@@ -959,22 +1018,27 @@ export default function App() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
+    fetchProfile();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        fetchProfile();
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = (token: string, userData: any) => {
-    console.log('Login successful, fetching profile...');
-    localStorage.setItem('token', token);
+  const handleLogin = () => {
     fetchProfile();
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
