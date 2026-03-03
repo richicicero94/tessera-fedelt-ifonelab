@@ -311,9 +311,10 @@ const MerchantDashboard = () => {
   const fetchCustomers = async () => {
     try {
       const res = await api.get('/merchant/customers');
-      setCustomers(res.data);
+      setCustomers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to fetch customers', err);
+      setCustomers([]);
     }
   };
 
@@ -500,6 +501,7 @@ export default function App() {
   }, []);
 
   const handleLogin = (token: string, userData: any) => {
+    console.log('Login successful, fetching profile...');
     localStorage.setItem('token', token);
     fetchProfile();
   };
@@ -512,7 +514,28 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-zinc-500 font-medium animate-pulse">Caricamento iFoneLab...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error boundary fallback (simplified)
+  if (user === undefined) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-zinc-100 text-center max-w-sm">
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">Ops! Qualcosa è andato storto</h2>
+          <p className="text-zinc-500 text-sm mb-6">Si è verificato un errore durante il caricamento del profilo.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold"
+          >
+            Ricarica Pagina
+          </button>
+        </div>
       </div>
     );
   }
