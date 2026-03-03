@@ -99,10 +99,9 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
     if (error) throw error;
 
-    // In a real app, you would send an email here. 
-    // For this demo, we'll return the token so you can test it.
     res.json({ message: 'Codice di recupero inviato (simulato)', debugToken: resetToken });
   } catch (error) {
+    console.error('Forgot password error:', error);
     res.status(500).json({ error: 'Errore durante la richiesta di reset' });
   }
 });
@@ -169,7 +168,7 @@ app.post('/api/merchant/add-points', authenticateToken, async (req: any, res) =>
 
   if (updateError) return res.status(500).json({ error: 'Failed to update points' });
   
-  res.json({ message: `Added ${points} points to ${user.email}`, newPoints });
+  res.json({ message: `Operazione completata per ${user.email}`, newPoints });
 });
 
 app.get('/api/merchant/customers', authenticateToken, async (req: any, res) => {
