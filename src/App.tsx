@@ -274,7 +274,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       if (authData.user) {
         const loyaltyCode = Math.random().toString(36).substring(2, 10).toUpperCase();
         const { error: profileError } = await supabase
-          .from('profiles')
+          .from('users')
           .insert([
             { 
               id: authData.user.id, 
@@ -417,7 +417,7 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
     setMessage(null);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .update({ phone })
         .eq('id', user.id);
 
@@ -558,7 +558,7 @@ const MerchantDashboard = () => {
   const fetchCustomers = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('role', 'customer')
         .order('points', { ascending: false });
@@ -686,7 +686,7 @@ const MerchantDashboard = () => {
           
           // 1. Find customer by loyalty code
           const { data: customer, error: findError } = await supabase
-            .from('profiles')
+            .from('users')
             .select('*')
             .eq('loyalty_code', decodedText)
             .single();
@@ -696,7 +696,7 @@ const MerchantDashboard = () => {
           // 2. Update points
           const newPoints = Math.max(0, (customer.points || 0) + pointsToSubmit);
           const { error: updateError } = await supabase
-            .from('profiles')
+            .from('users')
             .update({ points: newPoints })
             .eq('id', customer.id);
 
@@ -1000,7 +1000,7 @@ export default function App() {
       }
 
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .single();
 
