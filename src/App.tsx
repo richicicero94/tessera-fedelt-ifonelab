@@ -552,6 +552,19 @@ const MerchantDashboard = () => {
     }
   };
 
+  const handleSendToBroadcastList = () => {
+    if (!promotionText.trim()) {
+      alert('Inserisci un messaggio per la promozione.');
+      return;
+    }
+    const encodedMsg = encodeURIComponent(promotionText);
+    // This URL opens WhatsApp and lets the user choose the recipient (like the Ifonelab list)
+    const waUrl = `https://wa.me/?text=${encodedMsg}`;
+    window.open(waUrl, '_blank');
+    setIsPromotionModalOpen(false);
+    setMessage({ text: 'Seleziona la lista "Ifonelab" su WhatsApp per inviare il messaggio.', type: 'success' });
+  };
+
   const handleExportVCF = () => {
     const customersWithPhone = customers.filter(c => c.phone && c.phone.trim() !== '');
     if (customersWithPhone.length === 0) {
@@ -799,11 +812,19 @@ const MerchantDashboard = () => {
                 </div>
 
                 <button
-                  onClick={handleSendBroadcast}
+                  onClick={handleSendToBroadcastList}
                   className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                 >
-                  <Send className="w-5 h-5" />
-                  Apri Chat Individuali
+                  <MessageSquare className="w-5 h-5" />
+                  Invia a Lista "Ifonelab"
+                </button>
+
+                <button
+                  onClick={handleSendBroadcast}
+                  className="w-full bg-zinc-100 text-zinc-600 py-3 rounded-xl font-bold text-xs hover:bg-zinc-200 transition-all flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Apri Chat Individuali (Alternativa)
                 </button>
               </div>
             </motion.div>
