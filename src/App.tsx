@@ -557,12 +557,21 @@ const MerchantDashboard = () => {
       alert('Inserisci un messaggio per la promozione.');
       return;
     }
-    const encodedMsg = encodeURIComponent(promotionText);
-    // This URL opens WhatsApp and lets the user choose the recipient (like the Ifonelab list)
-    const waUrl = `https://wa.me/?text=${encodedMsg}`;
-    window.open(waUrl, '_blank');
-    setIsPromotionModalOpen(false);
-    setMessage({ text: 'Seleziona la lista "Ifonelab" su WhatsApp per inviare il messaggio.', type: 'success' });
+
+    // Copy to clipboard as a backup/helper
+    navigator.clipboard.writeText(promotionText).then(() => {
+      const encodedMsg = encodeURIComponent(promotionText);
+      const waUrl = `https://wa.me/?text=${encodedMsg}`;
+      window.open(waUrl, '_blank');
+      setIsPromotionModalOpen(false);
+      setMessage({ text: 'Messaggio copiato! Seleziona "Ifonelab" e invia.', type: 'success' });
+    }).catch(err => {
+      // Fallback if clipboard fails
+      const encodedMsg = encodeURIComponent(promotionText);
+      const waUrl = `https://wa.me/?text=${encodedMsg}`;
+      window.open(waUrl, '_blank');
+      setIsPromotionModalOpen(false);
+    });
   };
 
   const handleExportVCF = () => {
