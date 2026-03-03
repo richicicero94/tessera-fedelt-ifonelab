@@ -149,12 +149,27 @@ app.post('/api/auth/reset-password', async (req, res) => {
 app.get('/api/user/profile', authenticateToken, async (req: any, res) => {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, role, loyalty_code, points')
+    .select('id, email, role, loyalty_code, points, phone')
     .eq('id', req.user.id)
     .single();
 
   if (error || !user) return res.status(404).json({ error: 'User not found' });
   res.json(user);
+});
+
+app.post('/api/user/update-phone', authenticateToken, async (req: any, res) => {
+  const { phone } = req.body;
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ phone })
+      .eq('id', req.user.id);
+
+    if (error) throw error;
+    res.json({ message: 'Numero di telefono aggiornato con successo' });
+  } catch (error) {
+    res.status(500).json({ error: 'Errore durante l\'aggiornamento del telefono' });
+  }
 });
 
 // Merchant Routes

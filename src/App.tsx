@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
@@ -13,6 +13,7 @@ interface UserProfile {
   role: 'customer' | 'merchant';
   loyalty_code: string | null;
   points: number;
+  phone?: string;
 }
 
 // --- API Helper ---
@@ -362,6 +363,24 @@ const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) =>
 const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refreshProfile: () => void }) => {
   const points = user.points || 0;
   const loyaltyCode = user.loyalty_code || '';
+  const [phone, setPhone] = useState(user.phone || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+  const handleUpdatePhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    setMessage(null);
+    try {
+      await api.post('/user/update-phone', { phone });
+      setMessage({ text: 'Numero salvato! Riceverai le nostre promozioni.', type: 'success' });
+      refreshProfile();
+    } catch (err) {
+      setMessage({ text: 'Errore durante il salvataggio.', type: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div className="max-w-md mx-auto space-y-6">
@@ -405,6 +424,56 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
           )}
         </div>
         <p className="mt-4 font-mono text-xs text-zinc-400">{loyaltyCode}</p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+            <MessageSquare className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-zinc-900">Promozioni WhatsApp</h3>
+            <p className="text-zinc-500 text-xs">Ricevi sconti esclusivi sul tuo telefono</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleUpdatePhone} className="space-y-3">
+          <div className="relative">
+            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Inserisci il tuo numero..."
+              className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isUpdating}
+            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/10 disabled:opacity-50"
+          >
+            {isUpdating ? 'Salvataggio...' : 'Attiva Promozioni'}
+          </button>
+        </form>
+
+        <AnimatePresence>
+          {message && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className={`mt-3 p-3 rounded-xl text-xs font-medium text-center ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}
+            >
+              {message.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       <div className="grid grid-cols-2 gap-4">
