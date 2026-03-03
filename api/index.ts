@@ -92,6 +92,17 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit code
     const expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
 
+    // First check if user exists
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+    
+    if (fetchError || !user) {
+      return res.status(404).json({ error: 'Utente non trovato con questa email' });
+    }
+
     const { error } = await supabase
       .from('users')
       .update({ reset_token: resetToken, reset_token_expires: expires })
@@ -100,9 +111,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     if (error) throw error;
 
     res.json({ message: 'Codice di recupero inviato (simulato)', debugToken: resetToken });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Errore durante la richiesta di reset' });
+    // Return the actual error message to help the user debug
+    res.status(500).json({ error: `Errore Database: ${error.message || 'Errore sconosciuto'}` });
   }
 });
 
