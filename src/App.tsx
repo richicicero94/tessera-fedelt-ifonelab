@@ -35,8 +35,13 @@ const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => 
   return (
     <nav className="bg-white border-b border-zinc-200 px-4 py-3 sticky top-0 z-50">
       <div className="max-w-4xl mx-auto flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-zinc-900">
-          <Award className="w-6 h-6 text-emerald-600" />
+        <Link to="/" className="flex items-center gap-3 font-bold text-xl tracking-tight text-zinc-900">
+          <img 
+            src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+            alt="iFoneLab Logo" 
+            className="w-10 h-10 rounded-xl object-cover shadow-sm"
+            referrerPolicy="no-referrer"
+          />
           <span>iFoneLab</span>
         </Link>
         <div className="flex items-center gap-4">
@@ -192,7 +197,15 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
       animate={{ opacity: 1, y: 0 }}
       className="max-w-md mx-auto mt-12 p-8 bg-white rounded-3xl shadow-sm border border-zinc-100"
     >
-      <h2 className="text-2xl font-bold mb-6 text-zinc-900">Bentornato</h2>
+      <div className="flex flex-col items-center mb-6">
+        <img 
+          src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+          alt="iFoneLab Logo" 
+          className="w-20 h-20 rounded-2xl object-cover shadow-lg mb-4"
+          referrerPolicy="no-referrer"
+        />
+        <h2 className="text-2xl font-bold text-zinc-900">Bentornato</h2>
+      </div>
       {message && <p className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -273,7 +286,15 @@ const Signup = ({ onLogin }: { onLogin: (token: string, user: any) => void }) =>
       animate={{ opacity: 1, y: 0 }}
       className="max-w-md mx-auto mt-12 p-8 bg-white rounded-3xl shadow-sm border border-zinc-100"
     >
-      <h2 className="text-2xl font-bold mb-6 text-zinc-900">Crea Account</h2>
+      <div className="flex flex-col items-center mb-6">
+        <img 
+          src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+          alt="iFoneLab Logo" 
+          className="w-20 h-20 rounded-2xl object-cover shadow-lg mb-4"
+          referrerPolicy="no-referrer"
+        />
+        <h2 className="text-2xl font-bold text-zinc-900">Crea Account</h2>
+      </div>
       {successData ? (
         <div className="text-center py-4">
           <ShieldCheck className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
@@ -960,9 +981,20 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-zinc-500 font-medium animate-pulse">Caricamento iFoneLab...</p>
+        <div className="flex flex-col items-center gap-6">
+          <motion.img 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+            alt="iFoneLab Logo" 
+            className="w-24 h-24 rounded-3xl object-cover shadow-xl"
+            referrerPolicy="no-referrer"
+          />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-zinc-500 font-bold tracking-tight animate-pulse">iFoneLab</p>
+          </div>
         </div>
       </div>
     );
