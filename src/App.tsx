@@ -531,22 +531,28 @@ const MerchantDashboard = () => {
       return;
     }
 
-    // Since we don't have a bulk API, we open WhatsApp Web for each contact
-    // Browser might block multiple popups, so we'll do it one by one or explain
-    const confirmSend = confirm(`Stai per inviare questa promozione a ${customersWithPhone.length} clienti. Vuoi procedere?`);
+    const confirmSend = confirm(`Stai per inviare questa promozione a ${customersWithPhone.length} clienti. Vuoi procedere?\n\nNota: Assicurati di aver abilitato i pop-up nel browser.`);
     
     if (confirmSend) {
       customersWithPhone.forEach((customer, index) => {
-        // We use a small timeout to avoid browser blocking all popups at once
         setTimeout(() => {
+          // Clean phone number: remove non-digits
+          let cleanPhone = customer.phone.replace(/\D/g, '');
+          
+          // Add +39 if missing (default for Italy)
+          if (cleanPhone.length === 10 && (cleanPhone.startsWith('3'))) {
+            cleanPhone = '39' + cleanPhone;
+          } else if (cleanPhone.startsWith('00')) {
+            cleanPhone = cleanPhone.substring(2);
+          }
+
           const encodedMsg = encodeURIComponent(promotionText);
-          const waUrl = `https://wa.me/${customer.phone.replace(/\s+/g, '')}?text=${encodedMsg}`;
+          const waUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
           window.open(waUrl, '_blank');
-        }, index * 1000);
+        }, index * 1200); // Slightly longer delay to help bypass popup blockers
       });
       setIsPromotionModalOpen(false);
-      setPromotionText('');
-      setMessage({ text: 'Apertura chat WhatsApp in corso...', type: 'success' });
+      setMessage({ text: `Invio in corso a ${customersWithPhone.length} clienti... Controlla le schede del browser.`, type: 'success' });
     }
   };
 
