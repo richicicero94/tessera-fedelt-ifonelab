@@ -818,7 +818,7 @@ const MerchantDashboard = () => {
                     className="w-full bg-white border border-zinc-200 text-zinc-700 py-2 rounded-xl text-xs font-bold hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
                   >
                     <UserPlus className="w-3 h-3" />
-                    Scarica Contatti per Broadcast
+                    Scarica Contatti Ifonelab
                   </button>
                 </div>
 
