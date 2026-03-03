@@ -373,7 +373,7 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
     setMessage(null);
     try {
       await api.post('/user/update-phone', { phone });
-      setMessage({ text: 'Numero salvato! Riceverai le nostre promozioni.', type: 'success' });
+      setMessage({ text: 'Ora sei abilitato a ricevere le nostre promozioni', type: 'success' });
       refreshProfile();
     } catch (err) {
       setMessage({ text: 'Errore durante il salvataggio.', type: 'error' });
