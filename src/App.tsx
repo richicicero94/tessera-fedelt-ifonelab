@@ -671,9 +671,20 @@ const MerchantDashboard = () => {
           </div>
 
           <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-4 h-4 text-emerald-600" />
-              <label className="text-sm font-bold text-zinc-900">Messaggio Predefinito</label>
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-emerald-600" />
+                <label className="text-sm font-bold text-zinc-900">Messaggio Predefinito</label>
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(promotionText);
+                  alert('Testo copiato negli appunti!');
+                }}
+                className="text-[10px] bg-white border border-zinc-200 px-3 py-1.5 rounded-xl hover:bg-zinc-100 transition-all font-bold text-zinc-600 shadow-sm"
+              >
+                Copia Testo
+              </button>
             </div>
             <textarea
               value={promotionText}
@@ -811,13 +822,30 @@ const MerchantDashboard = () => {
                   </button>
                 </div>
 
-                <button
-                  onClick={handleSendToBroadcastList}
-                  className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  Invia a Lista "Ifonelab"
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleSendToBroadcastList}
+                    className="w-full bg-emerald-600 text-white py-7 rounded-[2.5rem] font-bold text-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 flex flex-col items-center justify-center gap-2 border-4 border-white/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Megaphone className="w-8 h-8" />
+                      <span>Invia a "Ifonelab"</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-[10px] font-medium bg-black/10 px-4 py-1 rounded-full">
+                      <span>1. Clicca</span>
+                      <span className="opacity-40">→</span>
+                      <span>2. Seleziona Community</span>
+                      <span className="opacity-40">→</span>
+                      <span>3. Invia</span>
+                    </div>
+                  </button>
+
+                  <div className="p-5 bg-emerald-50 rounded-[2rem] border border-emerald-100">
+                    <p className="text-xs text-emerald-800 leading-relaxed">
+                      <strong>Consiglio Privacy:</strong> Usa una <strong>Community WhatsApp</strong>. Nel gruppo "Annunci", i clienti <strong>non vedranno i numeri degli altri</strong>. Clicca il tasto sopra e seleziona la tua Community per un invio sicuro e veloce.
+                    </p>
+                  </div>
+                </div>
 
                 <button
                   onClick={handleSendBroadcast}
