@@ -66,6 +66,11 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetStep, setResetStep] = useState<'request' | 'reset'>('request');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +84,107 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
     }
   };
 
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const res = await api.post('/auth/forgot-password', { email });
+      setMessage(res.data.message);
+      if (res.data.debugToken) {
+        alert('DEBUG: Il tuo codice di reset è ' + res.data.debugToken);
+      }
+      setResetStep('reset');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Errore durante la richiesta');
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      await api.post('/auth/reset-password', { email, token: resetToken, newPassword });
+      setMessage('Password aggiornata! Ora puoi accedere.');
+      setForgotPassword(false);
+      setResetStep('request');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Errore durante il reset');
+    }
+  };
+
+  if (forgotPassword) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md mx-auto mt-12 p-8 bg-white rounded-3xl shadow-sm border border-zinc-100"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-zinc-900">Recupero Password</h2>
+        
+        {resetStep === 'request' ? (
+          <form onSubmit={handleResetRequest} className="space-y-4">
+            <p className="text-sm text-zinc-500 mb-4">Inserisci la tua email per ricevere un codice di recupero.</p>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <button
+              type="submit"
+              className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+            >
+              Invia Codice
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <p className="text-sm text-zinc-500 mb-4">Inserisci il codice ricevuto e la nuova password.</p>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Codice di Reset</label>
+              <input
+                type="text"
+                value={resetToken}
+                onChange={(e) => setResetToken(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Nuova Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <button
+              type="submit"
+              className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+            >
+              Aggiorna Password
+            </button>
+          </form>
+        )}
+        
+        <button
+          onClick={() => setForgotPassword(false)}
+          className="mt-6 w-full text-center text-sm text-zinc-500 hover:text-zinc-700"
+        >
+          Torna al login
+        </button>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -86,6 +192,7 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
       className="max-w-md mx-auto mt-12 p-8 bg-white rounded-3xl shadow-sm border border-zinc-100"
     >
       <h2 className="text-2xl font-bold mb-6 text-zinc-900">Bentornato</h2>
+      {message && <p className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
@@ -98,7 +205,20 @@ const Login = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-medium text-zinc-700">Password</label>
+            <button 
+              type="button"
+              onClick={() => {
+                setError('');
+                setMessage('');
+                setForgotPassword(true);
+              }}
+              className="text-xs text-emerald-600 hover:underline"
+            >
+              Dimenticata?
+            </button>
+          </div>
           <input
             type="password"
             value={password}

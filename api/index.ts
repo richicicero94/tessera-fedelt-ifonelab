@@ -86,6 +86,54 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit code
+    const expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+    const { error } = await supabase
+      .from('users')
+      .update({ reset_token: resetToken, reset_token_expires: expires })
+      .eq('email', email);
+
+    if (error) throw error;
+
+    // In a real app, you would send an email here. 
+    // For this demo, we'll return the token so you can test it.
+    res.json({ message: 'Codice di recupero inviato (simulato)', debugToken: resetToken });
+  } catch (error) {
+    res.status(500).json({ error: 'Errore durante la richiesta di reset' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('reset_token', token)
+      .single();
+
+    if (error || !user) return res.status(400).json({ error: 'Codice non valido o scaduto' });
+
+    const isExpired = new Date(user.reset_token_expires) < new Date();
+    if (isExpired) return res.status(400).json({ error: 'Codice scaduto' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await supabase
+      .from('users')
+      .update({ password: hashedPassword, reset_token: null, reset_token_expires: null })
+      .eq('email', email);
+
+    res.json({ message: 'Password aggiornata con successo' });
+  } catch (error) {
+    res.status(500).json({ error: 'Errore durante il reset della password' });
+  }
+});
+
 // User Routes
 app.get('/api/user/profile', authenticateToken, async (req: any, res) => {
   const { data: user, error } = await supabase
