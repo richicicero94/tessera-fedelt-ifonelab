@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
@@ -497,6 +497,13 @@ const MerchantDashboard = () => {
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
+  const [promotionText, setPromotionText] = useState(localStorage.getItem('promo_template') || '');
+
+  const saveTemplate = (text: string) => {
+    setPromotionText(text);
+    localStorage.setItem('promo_template', text);
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -511,6 +518,37 @@ const MerchantDashboard = () => {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  const handleSendBroadcast = () => {
+    const customersWithPhone = customers.filter(c => c.phone && c.phone.trim() !== '');
+    if (customersWithPhone.length === 0) {
+      alert('Nessun cliente ha registrato un numero di telefono per le promozioni.');
+      return;
+    }
+
+    if (!promotionText.trim()) {
+      alert('Inserisci un messaggio per la promozione.');
+      return;
+    }
+
+    // Since we don't have a bulk API, we open WhatsApp Web for each contact
+    // Browser might block multiple popups, so we'll do it one by one or explain
+    const confirmSend = confirm(`Stai per inviare questa promozione a ${customersWithPhone.length} clienti. Vuoi procedere?`);
+    
+    if (confirmSend) {
+      customersWithPhone.forEach((customer, index) => {
+        // We use a small timeout to avoid browser blocking all popups at once
+        setTimeout(() => {
+          const encodedMsg = encodeURIComponent(promotionText);
+          const waUrl = `https://wa.me/${customer.phone.replace(/\s+/g, '')}?text=${encodedMsg}`;
+          window.open(waUrl, '_blank');
+        }, index * 1000);
+      });
+      setIsPromotionModalOpen(false);
+      setPromotionText('');
+      setMessage({ text: 'Apertura chat WhatsApp in corso...', type: 'success' });
+    }
+  };
 
   useEffect(() => {
     let scanner: Html5QrcodeScanner | null = null;
@@ -586,6 +624,22 @@ const MerchantDashboard = () => {
             </button>
           </div>
 
+          <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-4 h-4 text-emerald-600" />
+              <label className="text-sm font-bold text-zinc-900">Messaggio Predefinito</label>
+            </div>
+            <textarea
+              value={promotionText}
+              onChange={(e) => saveTemplate(e.target.value)}
+              placeholder="Scrivi qui il testo della tua promozione..."
+              className="w-full px-4 py-3 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm h-24 resize-none bg-white"
+            />
+            <p className="mt-2 text-[10px] text-zinc-400 italic">
+              Questo testo verrà usato come base per le tue promozioni WhatsApp.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <label className="block text-sm font-medium text-zinc-700">
               {mode === 'add' ? 'Punti da aggiungere' : 'Punti da togliere'}
@@ -612,16 +666,26 @@ const MerchantDashboard = () => {
         </div>
 
         {!scanning ? (
-          <button
-            onClick={() => {
-              setMessage(null);
-              setScanning(true);
-            }}
-            className={`w-full text-white py-6 rounded-3xl font-bold text-lg transition-all shadow-lg flex flex-col items-center gap-2 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'}`}
-          >
-            <QrCode className="w-8 h-8" />
-            {mode === 'add' ? 'Aggiungi Punti' : 'Sottrai Punti'}
-          </button>
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setMessage(null);
+                setScanning(true);
+              }}
+              className={`w-full text-white py-6 rounded-3xl font-bold text-lg transition-all shadow-lg flex flex-col items-center gap-2 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'}`}
+            >
+              <QrCode className="w-8 h-8" />
+              {mode === 'add' ? 'Aggiungi Punti' : 'Sottrai Punti'}
+            </button>
+
+            <button
+              onClick={() => setIsPromotionModalOpen(true)}
+              className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold text-sm hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
+            >
+              <Megaphone className="w-5 h-5" />
+              Crea una Promozione
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
             <div id="reader" className={`overflow-hidden rounded-2xl border-2 ${mode === 'add' ? 'border-emerald-500' : 'border-red-500'}`}></div>
@@ -648,6 +712,65 @@ const MerchantDashboard = () => {
         </AnimatePresence>
       </div>
 
+      <AnimatePresence>
+        {isPromotionModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative"
+            >
+              <button 
+                onClick={() => setIsPromotionModalOpen(false)}
+                className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-zinc-400" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                  <Megaphone className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900">Nuova Promozione</h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">Messaggio WhatsApp</label>
+                  <textarea
+                    value={promotionText}
+                    onChange={(e) => setPromotionText(e.target.value)}
+                    placeholder="Esempio: Solo per oggi 20% di sconto su tutti i prodotti! Mostra la tua tessera fedeltà in negozio."
+                    className="w-full px-4 py-4 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm h-40 resize-none"
+                  />
+                  <p className="mt-2 text-[10px] text-zinc-400">
+                    Il messaggio verrà inviato dal tuo numero WhatsApp tramite WhatsApp Web.
+                  </p>
+                </div>
+
+                <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-500">Destinatari registrati:</span>
+                    <span className="font-bold text-zinc-900">
+                      {customers.filter(c => c.phone && c.phone.trim() !== '').length}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSendBroadcast}
+                  className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                >
+                  <Send className="w-5 h-5" />
+                  Invia a Tutti
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-zinc-900">Lista Clienti</h3>
@@ -669,9 +792,16 @@ const MerchantDashboard = () => {
             <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
               <div className="flex justify-between items-start mb-1">
                 <p className="text-sm font-semibold text-zinc-900 truncate max-w-[180px]">{customer.email}</p>
-                <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  <Award className="w-3 h-3" />
-                  {customer.points} pts
+                <div className="flex items-center gap-2">
+                  {customer.phone && (
+                    <div className="p-1 bg-emerald-50 text-emerald-600 rounded-lg" title={customer.phone}>
+                      <MessageSquare className="w-3 h-3" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    <Award className="w-3 h-3" />
+                    {customer.points} pts
+                  </div>
                 </div>
               </div>
               <p className="text-[10px] font-mono text-zinc-400">{customer.loyalty_code?.substring(0, 18)}...</p>

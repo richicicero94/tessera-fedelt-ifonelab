@@ -203,7 +203,7 @@ app.get('/api/merchant/customers', authenticateToken, async (req: any, res) => {
   
   const { data: customers, error } = await supabase
     .from('users')
-    .select('id, email, loyalty_code, points, created_at')
+    .select('id, email, loyalty_code, points, created_at, phone')
     .eq('role', 'customer')
     .order('points', { ascending: false });
 
