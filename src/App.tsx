@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -381,13 +381,43 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<'customer' | 'merchant'>('customer');
+  const [merchantExists, setMerchantExists] = useState(false);
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkMerchant = async () => {
+      const { count, error } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'merchant');
+      
+      if (!error && count && count > 0) {
+        setMerchantExists(true);
+      }
+    };
+    checkMerchant();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Double check on submission
+    if (role === 'merchant') {
+      const { count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'merchant');
+      
+      if (count && count > 0) {
+        setError('Esiste già un account commerciante. Registrati come cliente.');
+        setMerchantExists(true);
+        setRole('customer');
+        return;
+      }
+    }
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -523,25 +553,27 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-2">Tipo di Account</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setRole('customer')}
-                className={`py-3 rounded-xl border text-sm font-medium transition-all ${role === 'customer' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
-              >
-                Cliente
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('merchant')}
-                className={`py-3 rounded-xl border text-sm font-medium transition-all ${role === 'merchant' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
-              >
-                Commerciante
-              </button>
+          {!merchantExists && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-2">Tipo di Account</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('customer')}
+                  className={`py-3 rounded-xl border text-sm font-medium transition-all ${role === 'customer' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
+                >
+                  Cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('merchant')}
+                  className={`py-3 rounded-xl border text-sm font-medium transition-all ${role === 'merchant' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
+                >
+                  Commerciante
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
@@ -1116,8 +1148,9 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
               onClick={fetchCustomers}
               disabled={isRefreshing}
               className={`p-2 hover:bg-zinc-100 rounded-full transition-all ${isRefreshing ? 'animate-spin text-emerald-600' : 'text-zinc-400'}`}
+              title="Aggiorna lista"
             >
-              <Plus className={`w-4 h-4 transform ${isRefreshing ? '' : 'rotate-45'}`} />
+              <RefreshCw className="w-4 h-4" />
             </button>
             <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">{customers.length}</span>
           </div>
@@ -1134,8 +1167,8 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
         </div>
 
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-              {customers.map((customer) => (
-                <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
+          {filteredCustomers.map((customer) => (
+            <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex flex-col">
                       <p className="text-sm font-bold text-zinc-900">
@@ -1144,12 +1177,13 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
                       <p className="text-xs text-zinc-500 truncate max-w-[180px]">{customer.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                  {customer.phone && (
-                    <div className="p-1 bg-emerald-50 text-emerald-600 rounded-lg" title={customer.phone}>
-                      <MessageSquare className="w-3 h-3" />
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      {customer.phone && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg" title={customer.phone}>
+                          <Phone className="w-3 h-3" />
+                          <span className="text-[10px] font-bold">{customer.phone}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
                     <Award className="w-3 h-3" />
                     {customer.points} pts
                   </div>
