@@ -1018,7 +1018,19 @@ export default function App() {
           .eq('id', authUser.id)
           .single();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // Se l'utente esiste in Auth ma non ancora nella tabella 'users'
+          // (magari il trigger è lento o non è stato eseguito l'SQL)
+          console.warn('Profilo non trovato nel database, riprovo...');
+          setUser({
+            id: authUser.id,
+            email: authUser.email || '',
+            role: 'customer',
+            loyalty_code: 'In creazione...',
+            points: 0
+          });
+          return;
+        }
         
         if (profile) {
           setUser(profile);
