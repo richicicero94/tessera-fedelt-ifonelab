@@ -8,15 +8,13 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 
 // --- Types ---
 interface UserProfile {
-  id: string | number;
+  id: string;
   email: string;
   role: 'customer' | 'merchant';
   loyalty_code: string | null;
   points: number;
   phone?: string;
 }
-
-// --- Components ---
 
 const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => void }) => {
   return (
@@ -66,15 +64,33 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Ascolta i cambiamenti di stato (es. quando l'utente clicca sul link di recupero password)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setForgotPassword(true);
+        setResetStep('reset');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          throw new Error("Devi prima confermare la tua email! Controlla la tua posta.");
+        }
+        throw error;
+      }
       
       if (data.session) {
         onLogin();
@@ -272,31 +288,19 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       if (authError) throw authError;
 
       if (authData.user) {
-        const loyaltyCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert([
-            { 
-              id: authData.user.id, 
-              email: email, 
-              role: role, 
-              points: 0, 
-              loyalty_code: loyaltyCode 
-            }
-          ]);
-
-        if (profileError) throw profileError;
-
+        // Con il trigger SQL, non serve più fare l'insert manuale qui.
+        // Supabase lo farà da solo quando l'utente conferma la mail.
         setSuccessData({
           email: email,
-          loyalty_code: loyaltyCode
+          session: authData.session
         });
 
-        // Auto login after a few seconds
-        setTimeout(() => {
-          onLogin();
-          navigate('/');
-        }, 3000);
+        if (authData.session) {
+          setTimeout(() => {
+            onLogin();
+            navigate('/');
+          }, 3000);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Errore durante la registrazione');
@@ -333,16 +337,29 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           )}
           
-          <p className="text-zinc-400 text-xs mt-6">Verrai reindirizzato alla tua area personale tra pochi secondi...</p>
-          <button 
-            onClick={() => {
-              onLogin();
-              navigate('/');
-            }}
-            className="mt-4 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
-          >
-            Vai alla Dashboard ora
-          </button>
+          {successData.session ? (
+            <>
+              <p className="text-zinc-400 text-xs mt-6">Verrai reindirizzato alla tua area personale tra pochi secondi...</p>
+              <button 
+                onClick={() => {
+                  onLogin();
+                  navigate('/');
+                }}
+                className="mt-4 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+              >
+                Vai alla Dashboard ora
+              </button>
+            </>
+          ) : (
+            <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+              <p className="text-sm text-amber-800 font-medium">
+                Controlla la tua email per confermare l'account e poter accedere.
+              </p>
+              <Link to="/login" className="mt-4 inline-block text-zinc-900 font-bold hover:underline">
+                Vai al Login
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -993,21 +1010,21 @@ export default function App() {
 
   const fetchProfile = async () => {
     try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authUser) {
-        throw new Error('Not authenticated');
-      }
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
 
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .single();
-
-      if (profileError) throw profileError;
-
-      if (profile) {
-        setUser(profile);
+        if (profileError) throw profileError;
+        
+        if (profile) {
+          setUser(profile);
+        }
+      } else {
+        setUser(null);
       }
     } catch (err) {
       console.error('Profile fetch error:', err);
@@ -1019,14 +1036,12 @@ export default function App() {
 
   useEffect(() => {
     fetchProfile();
-    
-    // Listen for auth changes
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         fetchProfile();
       } else {
         setUser(null);
-        setLoading(false);
       }
     });
 
