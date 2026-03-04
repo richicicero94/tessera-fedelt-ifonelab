@@ -16,6 +16,105 @@ interface UserProfile {
   phone?: string;
 }
 
+// --- Components ---
+
+const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('Le password non coincidono');
+      return;
+    }
+    if (password.length < 6) {
+      setError('La password deve essere di almeno 6 caratteri');
+      return;
+    }
+
+    setError('');
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setMessage('Password aggiornata con successo! Ora puoi usare la nuova password.');
+      setTimeout(() => {
+        onClose();
+        window.location.hash = '';
+      }, 3000);
+    } catch (err: any) {
+      setError(err.message || 'Errore durante l\'aggiornamento');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h3 className="text-xl font-bold text-zinc-900">Nuova Password</h3>
+        </div>
+
+        {message ? (
+          <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl border border-emerald-100 text-center font-medium">
+            {message}
+          </div>
+        ) : (
+          <form onSubmit={handleReset} className="space-y-4">
+            <p className="text-sm text-zinc-500 mb-4">
+              Inserisci la tua nuova password per completare il recupero dell'account.
+            </p>
+            
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Nuova Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Conferma Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                required
+              />
+            </div>
+
+            {error && <p className="text-red-500 text-xs font-medium ml-1">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all disabled:opacity-50"
+            >
+              {isUpdating ? 'Aggiornamento...' : 'Salva Nuova Password'}
+            </button>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
 const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => void }) => {
   return (
     <nav className="bg-white border-b border-zinc-200 px-4 py-3 sticky top-0 z-50">
@@ -730,12 +829,17 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
 
           // 2. Update points
           const newPoints = Math.max(0, (customer.points || 0) + pointsToSubmit);
-          const { error: updateError } = await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from('users')
             .update({ points: newPoints })
-            .eq('id', customer.id);
+            .eq('id', customer.id)
+            .select();
 
           if (updateError) throw updateError;
+          
+          if (!updateData || updateData.length === 0) {
+            throw new Error('Permesso negato: Assicurati di aver configurato le Policy su Supabase.');
+          }
 
           setMessage({ text: `Punti aggiornati con successo! Nuovo saldo: ${newPoints}`, type: 'success' });
           fetchCustomers(); // Refresh list
@@ -1037,6 +1141,7 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -1079,7 +1184,11 @@ export default function App() {
   useEffect(() => {
     fetchProfile();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setShowResetModal(true);
+      }
+      
       if (session) {
         fetchProfile();
       } else {
@@ -1173,6 +1282,10 @@ export default function App() {
             <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/" />} />
           </Routes>
         </main>
+        
+        {showResetModal && (
+          <ResetPasswordModal onClose={() => setShowResetModal(false)} />
+        )}
       </div>
     </Router>
   );
