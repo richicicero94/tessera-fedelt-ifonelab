@@ -301,18 +301,20 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Con il trigger SQL, non serve più fare l'insert manuale qui.
-        // Supabase lo farà da solo quando l'utente conferma la mail.
+        // Con il trigger SQL, il profilo viene creato istantaneamente.
+        // Se la conferma email è disattivata, authData.session sarà presente.
         setSuccessData({
           email: email,
           session: authData.session
         });
 
+        // Login immediato se abbiamo la sessione
         if (authData.session) {
-          setTimeout(() => {
-            onLogin();
-            navigate('/');
-          }, 3000);
+          onLogin();
+          navigate('/');
+        } else {
+          // Caso in cui la conferma email sia ancora attiva per errore
+          setMessage('Registrazione completata! Controlla la tua email.');
         }
       }
     } catch (err: any) {
