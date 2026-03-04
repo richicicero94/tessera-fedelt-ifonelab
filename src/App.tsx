@@ -65,16 +65,24 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Ascolta i cambiamenti di stato (es. quando l'utente clicca sul link di recupero password)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Gestione globale del recupero password
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        setForgotPassword(true);
-        setResetStep('reset');
+        // Se l'evento è recupero password, forziamo la visualizzazione del modulo reset
+        window.location.hash = '#reset-password';
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Mostra il modulo di reset se l'URL contiene l'indicazione
+  useEffect(() => {
+    if (window.location.hash === '#reset-password') {
+      setForgotPassword(true);
+      setResetStep('reset');
+    }
+  }, [window.location.hash]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,6 +291,11 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role: role // Passa il ruolo ai metadati per il trigger SQL
+          }
+        }
       });
 
       if (authError) throw authError;
@@ -557,7 +570,7 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
   );
 };
 
-const MerchantDashboard = () => {
+const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
   const [scanning, setScanning] = useState(false);
   const [pointsToAdd, setPointsToAdd] = useState(10);
   const [mode, setMode] = useState<'add' | 'subtract'>('add');
@@ -566,6 +579,7 @@ const MerchantDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
   const [promotionText, setPromotionText] = useState(localStorage.getItem('promo_template') || '');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const saveTemplate = (text: string) => {
     setPromotionText(text);
@@ -573,6 +587,7 @@ const MerchantDashboard = () => {
   };
 
   const fetchCustomers = async () => {
+    setIsRefreshing(true);
     try {
       const { data, error } = await supabase
         .from('users')
@@ -584,7 +599,8 @@ const MerchantDashboard = () => {
       setCustomers(data || []);
     } catch (err) {
       console.error('Failed to fetch customers', err);
-      setCustomers([]);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -959,8 +975,20 @@ const MerchantDashboard = () => {
 
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-zinc-900">Lista Clienti</h3>
-          <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">{customers.length}</span>
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 text-zinc-400" />
+            <h3 className="text-lg font-bold text-zinc-900">Lista Clienti</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={fetchCustomers}
+              disabled={isRefreshing}
+              className={`p-2 hover:bg-zinc-100 rounded-full transition-all ${isRefreshing ? 'animate-spin text-emerald-600' : 'text-zinc-400'}`}
+            >
+              <Plus className={`w-4 h-4 transform ${isRefreshing ? '' : 'rotate-45'}`} />
+            </button>
+            <span className="text-xs font-bold bg-zinc-100 text-zinc-500 px-2 py-1 rounded-full">{customers.length}</span>
+          </div>
         </div>
 
         <div className="mb-4">
@@ -1122,10 +1150,20 @@ export default function App() {
                   user.role === 'customer' ? (
                     <CustomerDashboard user={user} refreshProfile={fetchProfile} />
                   ) : (
-                    <MerchantDashboard />
+                    <MerchantDashboard user={user} />
                   )
                 ) : (
                   <Navigate to="/login" />
+                )
+              }
+            />
+            <Route
+              path="/merchant"
+              element={
+                user && user.role === 'merchant' ? (
+                  <MerchantDashboard user={user} />
+                ) : (
+                  <Navigate to="/" />
                 )
               }
             />
