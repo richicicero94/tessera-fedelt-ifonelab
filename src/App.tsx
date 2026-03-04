@@ -378,6 +378,8 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
 const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<'customer' | 'merchant'>('customer');
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
@@ -392,7 +394,9 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
         password,
         options: {
           data: {
-            role: role // Passa il ruolo ai metadati per il trigger SQL
+            role: role,
+            first_name: firstName,
+            last_name: lastName
           }
         }
       });
@@ -477,6 +481,28 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Nome</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Cognome</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
             <input
@@ -1108,11 +1134,16 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
         </div>
 
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-          {filteredCustomers.map(customer => (
-            <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
-              <div className="flex justify-between items-start mb-1">
-                <p className="text-sm font-semibold text-zinc-900 truncate max-w-[180px]">{customer.email}</p>
-                <div className="flex items-center gap-2">
+              {customers.map((customer) => (
+                <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-bold text-zinc-900">
+                        {customer.first_name} {customer.last_name}
+                      </p>
+                      <p className="text-xs text-zinc-500 truncate max-w-[180px]">{customer.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
                   {customer.phone && (
                     <div className="p-1 bg-emerald-50 text-emerald-600 rounded-lg" title={customer.phone}>
                       <MessageSquare className="w-3 h-3" />
