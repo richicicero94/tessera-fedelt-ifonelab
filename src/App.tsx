@@ -382,6 +382,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<'customer' | 'merchant'>('customer');
   const [merchantExists, setMerchantExists] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   const navigate = useNavigate();
@@ -403,6 +404,11 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!consent) {
+      setError('È necessario acconsentire al trattamento dei dati per procedere.');
+      return;
+    }
 
     // Double check on submission
     if (role === 'merchant') {
@@ -574,6 +580,21 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
               </div>
             </div>
           )}
+
+          <div className="flex items-start gap-3 pt-2">
+            <input
+              id="consent"
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              required
+            />
+            <label htmlFor="consent" className="text-xs text-zinc-500 leading-relaxed cursor-pointer select-none">
+              Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione della carta fedeltà digitale iFoneLab.
+            </label>
+          </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
