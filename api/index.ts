@@ -203,12 +203,37 @@ app.get('/api/merchant/customers', authenticateToken, async (req: any, res) => {
   
   const { data: customers, error } = await supabase
     .from('users')
-    .select('id, email, loyalty_code, points, created_at, phone')
+    .select('id, email, loyalty_code, points, created_at, phone, first_name, last_name')
     .eq('role', 'customer')
     .order('points', { ascending: false });
 
   if (error) return res.status(500).json({ error: 'Failed to fetch customers' });
   res.json(customers);
+});
+
+app.post('/api/merchant/update-customer', authenticateToken, async (req: any, res) => {
+  if (req.user.role !== 'merchant') return res.status(403).json({ error: 'Only merchants can update customers' });
+
+  const { id, email, firstName, lastName, loyaltyCode, phone } = req.body;
+  if (!id) return res.status(400).json({ error: 'Customer ID required' });
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        loyalty_code: loyaltyCode,
+        phone
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ message: 'Cliente aggiornato con successo' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Errore durante l\'aggiornamento del cliente' });
+  }
 });
 
 export default app;

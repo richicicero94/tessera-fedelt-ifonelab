@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -15,9 +15,140 @@ interface UserProfile {
   loyalty_code: string | null;
   points: number;
   phone?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 // --- Components ---
+
+const EditCustomerModal = ({ customer, onClose, onUpdate }: { customer: any, onClose: () => void, onUpdate: () => void }) => {
+  const [email, setEmail] = useState(customer.email || '');
+  const [firstName, setFirstName] = useState(customer.first_name || '');
+  const [lastName, setLastName] = useState(customer.last_name || '');
+  const [loyaltyCode, setLoyaltyCode] = useState(customer.loyalty_code || '');
+  const [phone, setPhone] = useState(customer.phone || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    setError('');
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          loyalty_code: loyaltyCode,
+          phone
+        })
+        .eq('id', customer.id);
+
+      if (error) throw error;
+      onUpdate();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Errore durante l\'aggiornamento');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
+        >
+          <X className="w-6 h-6 text-zinc-400" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+            <Edit2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-xl font-bold text-zinc-900">Modifica Cliente</h3>
+        </div>
+
+        <form onSubmit={handleUpdate} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Nome</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Cognome</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              required
+            />
+            <p className="text-[10px] text-amber-600 mt-1 ml-1 font-medium">Nota: Il cliente dovrà usare questa email per il login.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Codice Tessera</label>
+            <input
+              type="text"
+              value={loyaltyCode}
+              onChange={(e) => setLoyaltyCode(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Telefono</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            />
+          </div>
+
+          {error && <p className="text-red-500 text-xs font-medium">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={isUpdating}
+            className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all disabled:opacity-50 mt-4"
+          >
+            {isUpdating ? 'Aggiornamento...' : 'Salva Modifiche'}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
 
 const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
   const [password, setPassword] = useState('');
@@ -385,6 +516,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [merchantExists, setMerchantExists] = useState(false);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -657,8 +789,16 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         className="bg-zinc-900 text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden"
       >
         <div className="relative z-10">
-          <p className="text-zinc-400 text-sm font-medium uppercase tracking-wider mb-1">Punti Fedeltà</p>
-          <h2 className="text-6xl font-bold tracking-tighter mb-4">{points}</h2>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1">Punti Fedeltà</p>
+              <h2 className="text-6xl font-bold tracking-tighter">{points}</h2>
+            </div>
+            <div className="text-right">
+              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-1">Cliente</p>
+              <p className="text-sm font-bold text-emerald-400">{user.first_name} {user.last_name}</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
             <Award className="w-4 h-4" />
             <span>Livello Bronzo</span>
@@ -769,6 +909,7 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
   const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
   const [promotionText, setPromotionText] = useState(localStorage.getItem('promo_template') || '');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
 
   const saveTemplate = (text: string) => {
     setPromotionText(text);
@@ -1207,6 +1348,13 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
                       <p className="text-xs text-zinc-500 truncate max-w-[180px]">{customer.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditingCustomer(customer)}
+                        className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-400 hover:text-zinc-600 transition-all"
+                        title="Modifica cliente"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
                       {customer.phone && (
                         <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg" title={customer.phone}>
                           <Phone className="w-3 h-3" />
@@ -1227,6 +1375,16 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {editingCustomer && (
+          <EditCustomerModal 
+            customer={editingCustomer} 
+            onClose={() => setEditingCustomer(null)} 
+            onUpdate={fetchCustomers} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

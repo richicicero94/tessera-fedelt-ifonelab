@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createClient } from '@supabase/supabase-js';
 
 // Usiamo un metodo più robusto per leggere le variabili sia in locale che su Vercel
