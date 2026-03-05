@@ -1062,14 +1062,10 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         </AnimatePresence>
       </motion.div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1">
         <div className="bg-white p-6 rounded-3xl border border-zinc-100">
           <p className="text-zinc-400 text-xs font-bold uppercase mb-1">Ultima Visita</p>
           <p className="text-zinc-900 font-semibold">Oggi</p>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-zinc-100">
-          <p className="text-zinc-400 text-xs font-bold uppercase mb-1">Prossimo Premio</p>
-          <p className="text-zinc-900 font-semibold">500 pts</p>
         </div>
       </div>
     </div>
