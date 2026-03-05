@@ -4,6 +4,7 @@ import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, 
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
+import Barcode from 'react-barcode';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
 // --- Types ---
@@ -485,8 +486,14 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
             <div className="mt-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
               <p className="text-sm text-zinc-500 mb-2">Il tuo Codice Tessera Fedeltà:</p>
               <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.loyalty_code}</p>
-              <div className="mt-4 flex justify-center">
-                <QRCodeSVG value={successData.loyalty_code} size={120} />
+              <div className="mt-4 flex justify-center overflow-hidden">
+                <Barcode 
+                  value={successData.loyalty_code} 
+                  width={1.5} 
+                  height={60} 
+                  fontSize={14}
+                  background="#f9fafb"
+                />
               </div>
             </div>
           )}
@@ -668,22 +675,24 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
       >
         <h3 className="text-lg font-bold text-zinc-900 mb-2">Il Tuo Codice</h3>
         <p className="text-zinc-500 text-sm mb-6">Mostra questo codice al commerciante per ricevere punti</p>
-        <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100">
+        <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100 w-full overflow-hidden">
           {loyaltyCode ? (
-            <QRCodeSVG
-              value={loyaltyCode}
-              size={200}
-              level="H"
-              includeMargin={true}
-              className="mx-auto"
-            />
+            <div className="flex justify-center">
+              <Barcode 
+                value={loyaltyCode} 
+                width={1.8} 
+                height={100} 
+                displayValue={false}
+                background="#f9fafb"
+              />
+            </div>
           ) : (
-            <div className="w-[200px] h-[200px] flex items-center justify-center text-zinc-400 italic">
+            <div className="w-[200px] h-[100px] flex items-center justify-center text-zinc-400 italic">
               Codice non disponibile
             </div>
           )}
         </div>
-        <p className="mt-4 font-mono text-xs text-zinc-400">{loyaltyCode}</p>
+        <p className="mt-4 font-mono text-lg font-bold text-zinc-900">{loyaltyCode}</p>
       </motion.div>
 
       <motion.div

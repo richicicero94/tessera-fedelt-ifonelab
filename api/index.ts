@@ -36,7 +36,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const loyaltyCode = role === 'merchant' ? null : '£' + Math.floor(10000000 + Math.random() * 90000000).toString();
+    const loyaltyCode = role === 'merchant' ? null : '#' + Math.floor(10000000 + Math.random() * 90000000).toString();
     
     const { data, error } = await supabase
       .from('users')
