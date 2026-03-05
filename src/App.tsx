@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2 } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -828,6 +828,14 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
   const [phone, setPhone] = useState(user.phone || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   const handleUpdatePhone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -902,6 +910,50 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
           )}
         </div>
         <p className="mt-4 font-mono text-lg font-bold text-zinc-900">{loyaltyCode}</p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="bg-white rounded-[2rem] shadow-sm border border-zinc-100 overflow-hidden"
+      >
+        <button
+          onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
+          className="w-full p-6 flex items-center justify-between hover:bg-zinc-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-zinc-100 rounded-xl text-zinc-600">
+              <HelpCircle className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-zinc-900">COME FUNZIONA</h3>
+          </div>
+          <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-300 ${isHowItWorksOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        <AnimatePresence>
+          {isHowItWorksOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <div className="px-6 pb-6 pt-2 space-y-4 border-t border-zinc-50">
+                <div className="flex items-center gap-2 text-emerald-600 font-bold">
+                  <span>🎯</span>
+                  <h4>Come funziona la carta fedeltà</h4>
+                </div>
+                <div className="space-y-3 text-zinc-600 text-sm leading-relaxed">
+                  <p>Con la nostra carta fedeltà accumulare punti è semplice.</p>
+                  <p>Per ogni acquisto con spesa minima di <span className="font-bold text-zinc-900">10 €</span> riceverai <span className="font-bold text-zinc-900">10 punti fedeltà</span>.</p>
+                  <p>Al raggiungimento di <span className="font-bold text-zinc-900">100 punti</span>, avrai diritto a un <span className="font-bold text-zinc-900">buono sconto di 10 €</span>, utilizzabile sul tuo prossimo acquisto.</p>
+                  <p className="pt-2 italic">Grazie per la tua fedeltà e per aver scelto il nostro negozio.</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       <motion.div
