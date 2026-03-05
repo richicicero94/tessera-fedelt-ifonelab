@@ -247,6 +247,75 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+const PullToRefresh = ({ onRefresh, children }: { onRefresh: () => Promise<void>, children: React.ReactNode }) => {
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const threshold = 80;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      setStartY(e.touches[0].pageY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startY === 0 || window.scrollY > 0) return;
+    
+    const currentY = e.touches[0].pageY;
+    const distance = currentY - startY;
+    
+    if (distance > 0) {
+      const pull = Math.min(distance * 0.4, threshold + 40);
+      setPullDistance(pull);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > threshold && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(threshold);
+      try {
+        await onRefresh();
+      } finally {
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+        }, 500);
+      }
+    } else {
+      setPullDistance(0);
+    }
+    setStartY(0);
+  };
+
+  return (
+    <div 
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="relative min-h-screen overflow-x-hidden"
+    >
+      <motion.div 
+        style={{ height: pullDistance, opacity: pullDistance / threshold }}
+        className="fixed top-0 left-0 right-0 z-[100] overflow-hidden flex items-center justify-center pointer-events-none"
+        animate={{ height: pullDistance }}
+        transition={isRefreshing ? { type: 'spring', stiffness: 300, damping: 30 } : { type: 'tween', duration: 0 }}
+      >
+        <div className={`p-2 bg-white rounded-full shadow-lg border border-zinc-100 transition-all duration-300 ${pullDistance > threshold ? 'scale-110 text-emerald-600' : 'scale-100 text-zinc-400'}`}>
+          <RefreshCw className={`w-6 h-6 ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
+        </div>
+      </motion.div>
+      <motion.div
+        animate={{ y: pullDistance }}
+        transition={isRefreshing ? { type: 'spring', stiffness: 300, damping: 30 } : { type: 'tween', duration: 0 }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+};
+
 const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => void }) => {
   return (
     <nav className="bg-white border-b border-zinc-200 px-4 py-3 sticky top-0 z-50">
@@ -1503,43 +1572,45 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900">
-        <Navbar user={user} onLogout={handleLogout} />
-        <main className="px-4 py-8">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                user ? (
-                  user.role === 'customer' ? (
-                    <CustomerDashboard user={user} refreshProfile={fetchProfile} />
+      <PullToRefresh onRefresh={fetchProfile}>
+        <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900">
+          <Navbar user={user} onLogout={handleLogout} />
+          <main className="px-4 py-8">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  user ? (
+                    user.role === 'customer' ? (
+                      <CustomerDashboard user={user} refreshProfile={fetchProfile} />
+                    ) : (
+                      <MerchantDashboard user={user} />
+                    )
                   ) : (
-                    <MerchantDashboard user={user} />
+                    <Navigate to="/login" />
                   )
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/merchant"
-              element={
-                user && user.role === 'merchant' ? (
-                  <MerchantDashboard user={user} />
-                ) : (
-                  <Navigate to="/" />
-                )
-              }
-            />
-            <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
-            <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/" />} />
-          </Routes>
-        </main>
-        
-        {showResetModal && (
-          <ResetPasswordModal onClose={() => setShowResetModal(false)} />
-        )}
-      </div>
+                }
+              />
+              <Route
+                path="/merchant"
+                element={
+                  user && user.role === 'merchant' ? (
+                    <MerchantDashboard user={user} />
+                  ) : (
+                    <Navigate to="/" />
+                  )
+                }
+              />
+              <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
+              <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/" />} />
+            </Routes>
+          </main>
+          
+          {showResetModal && (
+            <ResetPasswordModal onClose={() => setShowResetModal(false)} />
+          )}
+        </div>
+      </PullToRefresh>
     </Router>
   );
 }
