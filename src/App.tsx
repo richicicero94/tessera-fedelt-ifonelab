@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -883,6 +883,62 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         </div>
         <div className="absolute top-[-20%] right-[-20%] w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
       </motion.div>
+
+      {points >= 100 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-gradient-to-br from-amber-400 to-orange-500 p-8 rounded-[2rem] shadow-xl text-white text-center relative overflow-hidden"
+        >
+          {/* Animated Stars */}
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-white/40"
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.3, 0.8, 0.3],
+                rotate: [0, 90, 0],
+              }}
+              transition={{
+                duration: 2 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+              }}
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+              }}
+            >
+              <Star className="w-4 h-4 fill-current" />
+            </motion.div>
+          ))}
+
+          <div className="relative z-10">
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-block mb-4"
+            >
+              <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm">
+                <Trophy className="w-10 h-10 text-white" />
+              </div>
+            </motion.div>
+            
+            <h3 className="text-2xl font-black mb-2 tracking-tight">🎉 Congratulazioni!</h3>
+            <p className="text-white/90 font-medium leading-tight">
+              Hai raggiunto 100 punti e sbloccato un buono sconto di <span className="text-white font-bold underline decoration-white/40">10 €</span> da usare sul tuo prossimo acquisto!
+            </p>
+            
+            <div className="mt-6 inline-flex items-center gap-2 bg-white text-orange-600 px-6 py-2 rounded-full font-bold text-sm shadow-lg">
+              🏆 Premio Sbloccato
+            </div>
+          </div>
+          
+          {/* Decorative background trophy */}
+          <Trophy className="absolute -bottom-4 -right-4 w-32 h-32 text-white/10 rotate-12" />
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
