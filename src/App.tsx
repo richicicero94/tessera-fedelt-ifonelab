@@ -577,6 +577,88 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
+const PrivacyModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+          >
+            <button 
+              onClick={onClose}
+              className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6 text-zinc-400" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900">Privacy Policy</h3>
+            </div>
+
+            <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
+              <p>
+                Benvenuto su iFoneLab. La tua privacy è importante per noi. Ecco come gestiamo i tuoi dati:
+              </p>
+              
+              <div>
+                <h4 className="font-bold text-zinc-900 mb-1">Quali dati conserviamo?</h4>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Email</li>
+                  <li>Password (crittografata e non visibile nemmeno a noi)</li>
+                  <li>Nome e Cognome</li>
+                  <li>Codice tessera fedeltà</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-zinc-900 mb-1">Perché raccogliamo questi dati?</h4>
+                <p>
+                  I dati vengono raccolti esclusivamente per la creazione del tuo account e per la gestione della tua tessera fedeltà digitale (accumulo punti e riscossione premi).
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-zinc-900 mb-1">Controllo sui tuoi dati</h4>
+                <p>
+                  Puoi richiedere la cancellazione del tuo account in qualsiasi momento direttamente dalle impostazioni dell'app. Una volta inviata la richiesta, il commerciante riceverà una notifica e provvederà alla cancellazione definitiva dei tuoi dati (entro 7 giorni). In seguito alla cancellazione, tutti i tuoi dati verranno rimossi definitivamente dai nostri sistemi.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-zinc-900 mb-1">Sicurezza e Infrastruttura</h4>
+                <p>
+                  I dati degli utenti sono conservati su infrastrutture cloud sicure utilizzate per il funzionamento della piattaforma. In particolare, il database e il sistema di autenticazione sono gestiti da <strong>Supabase</strong>. Tali servizi trattano i dati per conto del titolare del trattamento nel rispetto delle normative sulla protezione dei dati.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-zinc-900 mb-1">Community WhatsApp</h4>
+                <p>
+                  Il tuo numero di telefono non viene raccolto né memorizzato all'interno dell'app. L'app fornisce semplicemente un link diretto per collegarti a una community WhatsApp esterna. L'adesione alla community è facoltativa e puoi uscirne in qualsiasi momento direttamente da WhatsApp.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="mt-8 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+            >
+              Ho capito
+            </button>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -830,83 +912,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
         </p>
       )}
 
-      <AnimatePresence>
-        {showPrivacyModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-            >
-              <button 
-                onClick={() => setShowPrivacyModal(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6 text-zinc-400" />
-              </button>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-zinc-900">Privacy Policy</h3>
-              </div>
-
-              <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
-                <p>
-                  Benvenuto su iFoneLab. La tua privacy è importante per noi. Ecco come gestiamo i tuoi dati:
-                </p>
-                
-                <div>
-                  <h4 className="font-bold text-zinc-900 mb-1">Quali dati conserviamo?</h4>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li>Email</li>
-                    <li>Password (crittografata e non visibile nemmeno a noi)</li>
-                    <li>Nome e Cognome</li>
-                    <li>Codice tessera fedeltà</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-zinc-900 mb-1">Perché raccogliamo questi dati?</h4>
-                  <p>
-                    I dati vengono raccolti esclusivamente per la creazione del tuo account e per la gestione della tua tessera fedeltà digitale (accumulo punti e riscossione premi).
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-zinc-900 mb-1">Controllo sui tuoi dati</h4>
-                  <p>
-                    Puoi richiedere la cancellazione del tuo account in qualsiasi momento direttamente dalle impostazioni dell'app. Una volta inviata la richiesta, il commerciante riceverà una notifica e provvederà alla cancellazione definitiva dei tuoi dati (entro 7 giorni). In seguito alla cancellazione, tutti i tuoi dati verranno rimossi definitivamente dai nostri sistemi.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-zinc-900 mb-1">Sicurezza e Infrastruttura</h4>
-                  <p>
-                    I dati degli utenti sono conservati su infrastrutture cloud sicure utilizzate per il funzionamento della piattaforma. In particolare, il database e il sistema di autenticazione sono gestiti da <strong>Supabase</strong>. Tali servizi trattano i dati per conto del titolare del trattamento nel rispetto delle normative sulla protezione dei dati.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-zinc-900 mb-1">Community WhatsApp</h4>
-                  <p>
-                    Il tuo numero di telefono non viene raccolto né memorizzato all'interno dell'app. L'app fornisce semplicemente un link diretto per collegarti a una community WhatsApp esterna. L'adesione alla community è facoltativa e puoi uscirne in qualsiasi momento direttamente da WhatsApp.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowPrivacyModal(false)}
-                className="mt-8 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
-              >
-                Ho capito
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <PrivacyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
     </motion.div>
   );
 };
@@ -923,6 +929,7 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
   const [editFirstName, setEditFirstName] = useState(user.first_name || '');
   const [editLastName, setEditLastName] = useState(user.last_name || '');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -993,9 +1000,9 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
 
       refreshProfile();
       setMessage({ text: 'Richiesta di eliminazione inviata. Il tuo account è ora in fase di cancellazione.', type: 'success' });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Errore durante l\'invio della richiesta.');
+      alert('Errore durante l\'invio della richiesta: ' + (err.message || 'Errore sconosciuto'));
     } finally {
       setIsDeleting(false);
     }
@@ -1066,6 +1073,16 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
                   >
                     <Edit2 className="w-4 h-4" />
                     Modifica Profilo
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPrivacyModal(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Privacy Policy
                   </button>
                   <button
                     onClick={() => {
@@ -1254,6 +1271,8 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
           <p className="text-zinc-900 font-semibold">Oggi</p>
         </div>
       </div>
+
+      <PrivacyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
 
       <AnimatePresence>
         {showEditModal && (
