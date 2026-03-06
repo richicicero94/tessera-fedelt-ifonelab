@@ -1012,62 +1012,16 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         </AnimatePresence>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100"
-      >
-        <div className="text-center mb-6">
-          <h3 className="font-bold text-zinc-900">Promozioni WhatsApp</h3>
-          <p className="text-zinc-500 text-xs">Ricevi sconti esclusivi sul tuo telefono</p>
-        </div>
-
-        <form onSubmit={handleUpdatePhone} className="space-y-3">
-          <div className="relative">
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Inserisci il tuo numero..."
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isUpdating}
-            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/10 disabled:opacity-50"
-          >
-            {isUpdating ? 'Salvataggio...' : 'Attiva Promozioni'}
-          </button>
-        </form>
-
-        <AnimatePresence>
-          {message && (
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className={`mt-3 p-3 rounded-xl text-xs font-medium text-center ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}
-            >
-              {message.text}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
       <motion.a
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        href="https://wa.me/393245988816?text=Ciao%20iFoneLab%2C%20ho%20salvato%20il%20vostro%20numero%21"
+        transition={{ delay: 0.2 }}
+        href="https://chat.whatsapp.com/Bts1aClkbMH94XSsQzVKRb"
         target="_blank"
         rel="noopener noreferrer"
-        className="block bg-emerald-600 p-6 sm:p-8 rounded-[2rem] shadow-lg text-white cursor-pointer hover:bg-emerald-700 transition-all group no-underline relative z-10"
+        className="block bg-emerald-600 p-8 rounded-[2rem] shadow-lg text-white cursor-pointer hover:bg-emerald-700 transition-all group no-underline relative z-10 text-center"
       >
-        <div className="text-center">
-          <h3 className="font-bold text-base leading-tight">SALVA IL NOSTRO NUMERO IN WHATSAPP</h3>
-          <p className="text-emerald-100 text-xs mt-1 font-medium uppercase">PER RICEVERE LE NOSTRE OFFERTE (NOME: IFONELAB)</p>
-        </div>
+        <h3 className="font-bold text-base leading-tight">ACCEDI ALLA COMMUNITY IFONELAB PER RICEVERE OFFERTE</h3>
       </motion.a>
 
       <div className="grid grid-cols-1">
