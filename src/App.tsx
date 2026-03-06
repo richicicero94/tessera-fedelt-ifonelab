@@ -17,6 +17,7 @@ interface UserProfile {
   phone?: string;
   first_name?: string;
   last_name?: string;
+  deletion_requested?: boolean;
 }
 
 // --- Components ---
@@ -877,7 +878,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                 <div>
                   <h4 className="font-bold text-zinc-900 mb-1">Controllo sui tuoi dati</h4>
                   <p>
-                    Puoi cancellare il tuo account in qualsiasi momento direttamente dalle impostazioni dell'app. In caso di cancellazione, tutti i tuoi dati verranno rimossi definitivamente dai nostri sistemi e non verranno conservati.
+                    Puoi richiedere la cancellazione del tuo account in qualsiasi momento direttamente dalle impostazioni dell'app. Una volta inviata la richiesta, il commerciante riceverà una notifica e provvederà alla cancellazione definitiva dei tuoi dati (entro 7 giorni). In seguito alla cancellazione, tutti i tuoi dati verranno rimossi definitivamente dai nostri sistemi.
                   </p>
                 </div>
 
@@ -978,28 +979,25 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
   };
 
   const handleDeleteAccount = async () => {
-    const confirmDelete = confirm('Sei sicuro di voler eliminare definitivamente il tuo account? Questa azione non può essere annullata e perderai tutti i tuoi punti.');
+    const confirmDelete = confirm('Sei sicuro di voler richiedere l\'eliminazione definitiva del tuo account? Il commerciante riceverà la tua richiesta e procederà alla cancellazione dei tuoi dati.');
     if (!confirmDelete) return;
 
     setIsDeleting(true);
     try {
-      // 1. Delete user from our 'users' table (Supabase RLS should allow this if configured)
-      const { error: dbError } = await supabase
+      const { error } = await supabase
         .from('users')
-        .delete()
+        .update({ deletion_requested: true })
         .eq('id', user.id);
 
-      if (dbError) throw dbError;
+      if (error) throw error;
 
-      // 2. Sign out (Supabase auth user deletion usually requires admin privileges or is handled by triggers)
-      // For this app, we'll just sign out and let the user know. 
-      // In a real production app, you'd call a edge function to delete the auth user too.
+      alert('Richiesta inviata con successo. Il tuo account verrà rimosso dal commerciante entro 7 giorni.');
       await supabase.auth.signOut();
       onLogout();
       navigate('/login');
     } catch (err) {
       console.error(err);
-      alert('Errore durante l\'eliminazione dell\'account.');
+      alert('Errore durante l\'invio della richiesta.');
     } finally {
       setIsDeleting(false);
     }
@@ -1007,17 +1005,15 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
 
   return (
     <div className="max-w-md mx-auto space-y-6 relative">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-zinc-900 text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden"
-      >
-        <div className="absolute top-6 right-6 z-20">
+      <div className="flex justify-between items-center px-2">
+        <h2 className="text-xl font-bold text-zinc-900">La Tua Area</h2>
+        <div className="relative">
           <button 
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2 hover:bg-zinc-100 rounded-full transition-colors flex items-center gap-1 text-zinc-600"
           >
-            <MoreVertical className="w-5 h-5 text-zinc-400" />
+            <span className="text-xs font-bold uppercase tracking-wider">Modifica</span>
+            <MoreVertical className="w-5 h-5" />
           </button>
           
           <AnimatePresence>
@@ -1058,7 +1054,13 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
             )}
           </AnimatePresence>
         </div>
+      </div>
 
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-zinc-900 text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden"
+      >
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -1684,7 +1686,40 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
         </div>
 
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-          {filteredCustomers.map((customer) => (
+          {/* Deletion Requests Section */}
+          {customers.filter(c => c.deletion_requested).length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-xs font-bold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Trash2 className="w-3 h-3" />
+                Richieste di Cancellazione
+              </h4>
+              <div className="space-y-2">
+                {customers.filter(c => c.deletion_requested).map((customer) => (
+                  <div key={customer.id} className="p-4 rounded-2xl border border-red-100 bg-red-50 flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-bold text-zinc-900">{customer.first_name} {customer.last_name}</p>
+                      <p className="text-xs text-zinc-500">{customer.email}</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Sei sicuro di voler eliminare definitivamente l'account di ${customer.first_name}?`)) {
+                          const { error } = await supabase.from('users').delete().eq('id', customer.id);
+                          if (error) alert('Errore durante la cancellazione');
+                          else fetchCustomers();
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition-colors"
+                    >
+                      Conferma Elimina
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="h-px bg-zinc-100 my-4" />
+            </div>
+          )}
+
+          {filteredCustomers.filter(c => !c.deletion_requested).map((customer) => (
             <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex flex-col">
