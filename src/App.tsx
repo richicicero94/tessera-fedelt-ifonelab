@@ -1062,12 +1062,13 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         </AnimatePresence>
       </motion.div>
 
-      <motion.div
+      <motion.a
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="bg-emerald-600 p-8 rounded-[2rem] shadow-lg text-white cursor-pointer hover:bg-emerald-700 transition-all group"
-        onClick={() => window.open('https://wa.me/393245988816?text=Ciao%20iFoneLab%2C%20ho%20salvato%20il%20vostro%20numero%21', '_blank')}
+        href="https://wa.me/393245988816?text=Ciao%20iFoneLab%2C%20ho%20salvato%20il%20vostro%20numero%21"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block bg-emerald-600 p-6 sm:p-8 rounded-[2rem] shadow-lg text-white cursor-pointer hover:bg-emerald-700 transition-all group no-underline relative z-10"
       >
         <div className="flex items-center gap-4">
           <div className="p-3 bg-white/20 rounded-2xl group-hover:scale-110 transition-transform">
@@ -1075,10 +1076,10 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
           </div>
           <div>
             <h3 className="font-bold text-base leading-tight">SALVA IL NOSTRO NUMERO IN WHATSAPP</h3>
-            <p className="text-emerald-100 text-xs mt-1 font-medium">PER RICEVERE LE NOSTRE OFFERTE (NOME: IFONELAB)</p>
+            <p className="text-emerald-100 text-xs mt-1 font-medium uppercase">PER RICEVERE LE NOSTRE OFFERTE (NOME: IFONELAB)</p>
           </div>
         </div>
-      </motion.div>
+      </motion.a>
 
       <div className="grid grid-cols-1">
         <div className="bg-white p-6 rounded-3xl border border-zinc-100">
