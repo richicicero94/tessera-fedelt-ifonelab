@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy, MoreVertical, Trash2 } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy, MoreVertical, Trash2, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -991,10 +991,8 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
 
       if (error) throw error;
 
-      alert('Richiesta inviata con successo. Il tuo account verrà rimosso dal commerciante entro 7 giorni.');
-      await supabase.auth.signOut();
-      onLogout();
-      navigate('/login');
+      refreshProfile();
+      setMessage({ text: 'Richiesta di eliminazione inviata. Il tuo account è ora in fase di cancellazione.', type: 'success' });
     } catch (err) {
       console.error(err);
       alert('Errore durante l\'invio della richiesta.');
@@ -1005,6 +1003,36 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
 
   return (
     <div className="max-w-md mx-auto space-y-6 relative">
+      {user.deletion_requested && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[60] bg-white/90 backdrop-blur-md flex items-center justify-center p-6 text-center"
+        >
+          <div className="space-y-6 max-w-xs">
+            <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
+              <Trash2 className="w-10 h-10" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-zinc-900 uppercase tracking-tighter">In Lavorazione</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed">
+                La tua richiesta di eliminazione account è stata presa in carico. Il commerciante provvederà alla rimozione definitiva dei tuoi dati entro 7 giorni.
+              </p>
+            </div>
+            <button 
+              onClick={async () => {
+                await supabase.auth.signOut();
+                onLogout();
+                navigate('/login');
+              }}
+              className="w-full py-4 bg-zinc-900 text-white rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+            >
+              Esci dall'account
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       <div className="flex justify-between items-center px-2">
         <h2 className="text-xl font-bold text-zinc-900">La Tua Area</h2>
         <div className="relative">
@@ -1321,6 +1349,16 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
     fetchCustomers();
   }, []);
 
+  useEffect(() => {
+    const pendingRequests = customers.filter(c => c.deletion_requested).length;
+    if (pendingRequests > 0) {
+      setMessage({ 
+        text: `Attenzione: Ci sono ${pendingRequests} richieste di cancellazione account in sospeso.`, 
+        type: 'error' 
+      });
+    }
+  }, [customers.length]);
+
   const handleSendBroadcast = () => {
     const customersWithPhone = customers.filter(c => c.phone && c.phone.trim() !== '');
     if (customersWithPhone.length === 0) {
@@ -1478,10 +1516,22 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
   return (
     <div className="max-w-md mx-auto space-y-6">
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100">
-        <h2 className="text-2xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-          <Scan className="w-6 h-6 text-emerald-600" />
-          Pannello Commerciante
-        </h2>
+        <div className="flex justify-between items-start mb-6">
+          <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
+            <Scan className="w-6 h-6 text-emerald-600" />
+            Pannello Commerciante
+          </h2>
+          <div className="relative">
+            <div className={`p-2 rounded-full ${customers.some(c => c.deletion_requested) ? 'bg-red-50 text-red-600' : 'bg-zinc-100 text-zinc-400'}`}>
+              <Bell className="w-6 h-6" />
+              {customers.filter(c => c.deletion_requested).length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {customers.filter(c => c.deletion_requested).length}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="space-y-6 mb-8">
           <div className="flex p-1 bg-zinc-100 rounded-2xl">
@@ -1719,14 +1769,28 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
             </div>
           )}
 
-          {filteredCustomers.filter(c => !c.deletion_requested).map((customer) => (
-            <div key={customer.id} className="p-4 rounded-2xl border border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
+          {filteredCustomers.map((customer) => (
+            <div 
+              key={customer.id} 
+              className={`p-4 rounded-2xl border transition-colors ${
+                customer.deletion_requested 
+                  ? 'border-red-200 bg-red-50 hover:bg-red-100' 
+                  : 'border-zinc-50 bg-zinc-50/50 hover:bg-zinc-50'
+              }`}
+            >
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex flex-col">
-                      <p className="text-sm font-bold text-zinc-900">
-                        {customer.first_name} {customer.last_name}
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-bold ${customer.deletion_requested ? 'text-red-700' : 'text-zinc-900'}`}>
+                          {customer.first_name} {customer.last_name}
+                        </p>
+                        {customer.deletion_requested && (
+                          <span className="text-[8px] font-black bg-red-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">Elimina</span>
+                        )}
+                      </div>
+                      <p className={`text-xs truncate max-w-[180px] ${customer.deletion_requested ? 'text-red-500' : 'text-zinc-500'}`}>
+                        {customer.email}
                       </p>
-                      <p className="text-xs text-zinc-500 truncate max-w-[180px]">{customer.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -1742,10 +1806,10 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
                           <span className="text-[10px] font-bold">{customer.phone}</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                    <Award className="w-3 h-3" />
-                    {customer.points} pts
-                  </div>
+                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${customer.deletion_requested ? 'bg-red-600 text-white' : 'bg-emerald-100 text-emerald-700'}`}>
+                        <Award className="w-3 h-3" />
+                        {customer.points} pts
+                      </div>
                 </div>
               </div>
               <p className="text-[10px] font-mono text-zinc-400">{customer.loyalty_code?.substring(0, 18)}...</p>
