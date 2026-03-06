@@ -1062,6 +1062,24 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         </AnimatePresence>
       </motion.div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="bg-emerald-600 p-8 rounded-[2rem] shadow-lg text-white cursor-pointer hover:bg-emerald-700 transition-all group"
+        onClick={() => window.open('https://wa.me/393245988816?text=Ciao%20iFoneLab%2C%20ho%20salvato%20il%20vostro%20numero%21', '_blank')}
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-white/20 rounded-2xl group-hover:scale-110 transition-transform">
+            <UserPlus className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-base leading-tight">SALVA IL NOSTRO NUMERO IN WHATSAPP</h3>
+            <p className="text-emerald-100 text-xs mt-1 font-medium">PER RICEVERE LE NOSTRE OFFERTE (NOME: IFONELAB)</p>
+          </div>
+        </div>
+      </motion.div>
+
       <div className="grid grid-cols-1">
         <div className="bg-white p-6 rounded-3xl border border-zinc-100">
           <p className="text-zinc-400 text-xs font-bold uppercase mb-1">Ultima Visita</p>
