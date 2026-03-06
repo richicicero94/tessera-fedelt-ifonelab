@@ -1018,25 +1018,19 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         transition={{ delay: 0.2 }}
         className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100"
       >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
-            <MessageSquare className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-zinc-900">Promozioni WhatsApp</h3>
-            <p className="text-zinc-500 text-xs">Ricevi sconti esclusivi sul tuo telefono</p>
-          </div>
+        <div className="text-center mb-6">
+          <h3 className="font-bold text-zinc-900">Promozioni WhatsApp</h3>
+          <p className="text-zinc-500 text-xs">Ricevi sconti esclusivi sul tuo telefono</p>
         </div>
 
         <form onSubmit={handleUpdatePhone} className="space-y-3">
           <div className="relative">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Inserisci il tuo numero..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
             />
           </div>
           <button
@@ -1070,14 +1064,9 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
         rel="noopener noreferrer"
         className="block bg-emerald-600 p-6 sm:p-8 rounded-[2rem] shadow-lg text-white cursor-pointer hover:bg-emerald-700 transition-all group no-underline relative z-10"
       >
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/20 rounded-2xl group-hover:scale-110 transition-transform">
-            <UserPlus className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-bold text-base leading-tight">SALVA IL NOSTRO NUMERO IN WHATSAPP</h3>
-            <p className="text-emerald-100 text-xs mt-1 font-medium uppercase">PER RICEVERE LE NOSTRE OFFERTE (NOME: IFONELAB)</p>
-          </div>
+        <div className="text-center">
+          <h3 className="font-bold text-base leading-tight">SALVA IL NOSTRO NUMERO IN WHATSAPP</h3>
+          <p className="text-emerald-100 text-xs mt-1 font-medium uppercase">PER RICEVERE LE NOSTRE OFFERTE (NOME: IFONELAB)</p>
         </div>
       </motion.a>
 
@@ -1310,33 +1299,6 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
             </button>
           </div>
 
-          <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100">
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-emerald-600" />
-                <label className="text-sm font-bold text-zinc-900">Messaggio Predefinito</label>
-              </div>
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(promotionText);
-                  alert('Testo copiato negli appunti!');
-                }}
-                className="text-[10px] bg-white border border-zinc-200 px-3 py-1.5 rounded-xl hover:bg-zinc-100 transition-all font-bold text-zinc-600 shadow-sm"
-              >
-                Copia Testo
-              </button>
-            </div>
-            <textarea
-              value={promotionText}
-              onChange={(e) => saveTemplate(e.target.value)}
-              placeholder="Scrivi qui il testo della tua promozione..."
-              className="w-full px-4 py-3 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm h-24 resize-none bg-white"
-            />
-            <p className="mt-2 text-[10px] text-zinc-400 italic">
-              Questo testo verrà usato come base per le tue promozioni WhatsApp.
-            </p>
-          </div>
-
           <div className="space-y-3">
             <label className="block text-sm font-medium text-zinc-700">
               {mode === 'add' ? 'Punti da aggiungere' : 'Punti da togliere'}
@@ -1373,14 +1335,6 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
             >
               <QrCode className="w-8 h-8" />
               {mode === 'add' ? 'Aggiungi Punti' : 'Sottrai Punti'}
-            </button>
-
-            <button
-              onClick={() => setIsPromotionModalOpen(true)}
-              className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold text-sm hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
-            >
-              <Megaphone className="w-5 h-5" />
-              Crea una Promozione
             </button>
           </div>
         ) : (
