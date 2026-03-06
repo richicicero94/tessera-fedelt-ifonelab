@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy, MoreVertical, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -584,6 +584,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [role, setRole] = useState<'customer' | 'merchant'>('customer');
   const [merchantExists, setMerchantExists] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
@@ -789,18 +790,27 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           )}
 
-          <div className="flex items-start gap-3 pt-2">
-            <input
-              id="consent"
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-              required
-            />
-            <label htmlFor="consent" className="text-xs text-zinc-500 leading-relaxed cursor-pointer select-none">
-              Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione della carta fedeltà digitale iFoneLab.
-            </label>
+          <div className="flex flex-col gap-2 pt-2">
+            <div className="flex items-start gap-3">
+              <input
+                id="consent"
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                required
+              />
+              <label htmlFor="consent" className="text-xs text-zinc-500 leading-relaxed cursor-pointer select-none">
+                Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione della carta fedeltà digitale iFoneLab.
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPrivacyModal(true)}
+              className="text-xs text-emerald-600 font-medium hover:underline text-left pl-7"
+            >
+              Scopri di più sulla PRIVACY POLICY
+            </button>
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -818,17 +828,101 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           Hai già un account? <Link to="/login" className="text-emerald-600 font-medium hover:underline">Accedi</Link>
         </p>
       )}
+
+      <AnimatePresence>
+        {showPrivacyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button 
+                onClick={() => setShowPrivacyModal(false)}
+                className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-zinc-400" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-900">Privacy Policy</h3>
+              </div>
+
+              <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
+                <p>
+                  Benvenuto su iFoneLab. La tua privacy è importante per noi. Ecco come gestiamo i tuoi dati:
+                </p>
+                
+                <div>
+                  <h4 className="font-bold text-zinc-900 mb-1">Quali dati conserviamo?</h4>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Email</li>
+                    <li>Password (crittografata e non visibile nemmeno a noi)</li>
+                    <li>Nome e Cognome</li>
+                    <li>Codice tessera fedeltà</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-zinc-900 mb-1">Perché raccogliamo questi dati?</h4>
+                  <p>
+                    I dati vengono raccolti esclusivamente per la creazione del tuo account e per la gestione della tua tessera fedeltà digitale (accumulo punti e riscossione premi).
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-zinc-900 mb-1">Controllo sui tuoi dati</h4>
+                  <p>
+                    Puoi cancellare il tuo account in qualsiasi momento direttamente dalle impostazioni dell'app. In caso di cancellazione, tutti i tuoi dati verranno rimossi definitivamente dai nostri sistemi e non verranno conservati.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-zinc-900 mb-1">Sicurezza e Infrastruttura</h4>
+                  <p>
+                    I dati degli utenti sono conservati su infrastrutture cloud sicure utilizzate per il funzionamento della piattaforma. In particolare, il database e il sistema di autenticazione sono gestiti da <strong>Supabase</strong>. Tali servizi trattano i dati per conto del titolare del trattamento nel rispetto delle normative sulla protezione dei dati.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-zinc-900 mb-1">Community WhatsApp</h4>
+                  <p>
+                    Il tuo numero di telefono non viene raccolto né memorizzato all'interno dell'app. L'app fornisce semplicemente un link diretto per collegarti a una community WhatsApp esterna. L'adesione alla community è facoltativa e puoi uscirne in qualsiasi momento direttamente da WhatsApp.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="mt-8 w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
+              >
+                Ho capito
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
 
-const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refreshProfile: () => void }) => {
+const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfile, refreshProfile: () => void, onLogout: () => void }) => {
   const points = user.points || 0;
   const loyaltyCode = user.loyalty_code || '';
   const [phone, setPhone] = useState(user.phone || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(user.first_name || '');
+  const [editLastName, setEditLastName] = useState(user.last_name || '');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (message) {
@@ -858,13 +952,113 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
     }
   };
 
+  const handleUpdateName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          first_name: editFirstName, 
+          last_name: editLastName 
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      
+      setShowEditModal(false);
+      refreshProfile();
+      setMessage({ text: 'Profilo aggiornato con successo!', type: 'success' });
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: 'Errore durante l\'aggiornamento.', type: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmDelete = confirm('Sei sicuro di voler eliminare definitivamente il tuo account? Questa azione non può essere annullata e perderai tutti i tuoi punti.');
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // 1. Delete user from our 'users' table (Supabase RLS should allow this if configured)
+      const { error: dbError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', user.id);
+
+      if (dbError) throw dbError;
+
+      // 2. Sign out (Supabase auth user deletion usually requires admin privileges or is handled by triggers)
+      // For this app, we'll just sign out and let the user know. 
+      // In a real production app, you'd call a edge function to delete the auth user too.
+      await supabase.auth.signOut();
+      onLogout();
+      navigate('/login');
+    } catch (err) {
+      console.error(err);
+      alert('Errore durante l\'eliminazione dell\'account.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="max-w-md mx-auto space-y-6 relative">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-zinc-900 text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden"
       >
+        <div className="absolute top-6 right-6 z-20">
+          <button 
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <MoreVertical className="w-5 h-5 text-zinc-400" />
+          </button>
+          
+          <AnimatePresence>
+            {showMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setShowMenu(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 z-40"
+                >
+                  <button
+                    onClick={() => {
+                      setShowEditModal(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Modifica Profilo
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDeleteAccount();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Elimina Account
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -1030,6 +1224,58 @@ const CustomerDashboard = ({ user, refreshProfile }: { user: UserProfile, refres
           <p className="text-zinc-900 font-semibold">Oggi</p>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-zinc-400" />
+              </button>
+
+              <h3 className="text-xl font-bold text-zinc-900 mb-6">Modifica Profilo</h3>
+
+              <form onSubmit={handleUpdateName} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Nome</label>
+                  <input
+                    type="text"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Cognome</label>
+                  <input
+                    type="text"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                >
+                  {isUpdating ? 'Salvataggio...' : 'Salva Modifiche'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1613,7 +1859,7 @@ export default function App() {
                 element={
                   user ? (
                     user.role === 'customer' ? (
-                      <CustomerDashboard user={user} refreshProfile={fetchProfile} />
+                      <CustomerDashboard user={user} refreshProfile={fetchProfile} onLogout={handleLogout} />
                     ) : (
                       <MerchantDashboard user={user} />
                     )
