@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy, MoreVertical, Trash2, Bell } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, QrCode, Scan, User, Award, ShieldCheck, Plus, Minus, Phone, MessageSquare, Megaphone, Send, X, RefreshCw, Edit2, HelpCircle, ChevronDown, Star, Trophy, MoreVertical, Trash2, Bell, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './supabaseClient';
 import { QRCodeSVG } from 'qrcode.react';
@@ -355,161 +355,58 @@ const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => 
 };
 
 const Login = ({ onLogin }: { onLogin: () => void }) => {
+  const [loyaltyCode, setLoyaltyCode] = useState('');
+  const [pin, setPin] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'customer' | 'merchant'>('customer');
   const [error, setError] = useState('');
-  const [forgotPassword, setForgotPassword] = useState(false);
-  const [resetStep, setResetStep] = useState<'request' | 'reset'>('request');
-  const [resetToken, setResetToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Gestione globale del recupero password
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // Se l'evento è recupero password, forziamo la visualizzazione del modulo reset
-        window.location.hash = '#reset-password';
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Mostra il modulo di reset se l'URL contiene l'indicazione
-  useEffect(() => {
-    if (window.location.hash === '#reset-password') {
-      setForgotPassword(true);
-      setResetStep('reset');
-    }
-  }, [window.location.hash]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          throw new Error("Devi prima confermare la tua email! Controlla la tua posta.");
+      if (role === 'customer') {
+        // 1. Find the user by loyalty code
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('email')
+          .eq('loyalty_code', loyaltyCode.startsWith('#') ? loyaltyCode : `#${loyaltyCode}`)
+          .single();
+
+        if (userError || !userData) {
+          throw new Error('Numero tessera non trovato.');
         }
-        throw error;
+
+        // 2. Sign in with the found email and the provided PIN
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: userData.email,
+          password: pin,
+        });
+
+        if (authError) throw authError;
+      } else {
+        // Merchant login with email and password
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (authError) throw authError;
       }
-      
-      if (data.session) {
-        onLogin();
-        navigate('/');
-      }
+
+      onLogin();
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Errore durante l\'accesso');
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleResetRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/login',
-      });
-      if (error) throw error;
-      setMessage('Controlla la tua email per il link di reset!');
-    } catch (err: any) {
-      setError(err.message || 'Errore durante la richiesta');
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      setMessage('Password aggiornata! Ora puoi accedere.');
-      setForgotPassword(false);
-      setResetStep('request');
-    } catch (err: any) {
-      setError(err.message || 'Errore durante il reset');
-    }
-  };
-
-  if (forgotPassword) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md mx-auto mt-12 p-8 bg-white rounded-3xl shadow-sm border border-zinc-100"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-zinc-900">Recupero Password</h2>
-        
-        {resetStep === 'request' ? (
-          <form onSubmit={handleResetRequest} className="space-y-4">
-            <p className="text-sm text-zinc-500 mb-4">Inserisci la tua email per ricevere un codice di recupero.</p>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
-            >
-              Invia Codice
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <p className="text-sm text-zinc-500 mb-4">Inserisci il codice ricevuto e la nuova password.</p>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Codice di Reset</label>
-              <input
-                type="text"
-                value={resetToken}
-                onChange={(e) => setResetToken(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Nuova Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors"
-            >
-              Aggiorna Password
-            </button>
-          </form>
-        )}
-        
-        <button
-          onClick={() => setForgotPassword(false)}
-          className="mt-6 w-full text-center text-sm text-zinc-500 hover:text-zinc-700"
-        >
-          Torna al login
-        </button>
-      </motion.div>
-    );
-  }
 
   return (
     <motion.div
@@ -525,53 +422,86 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           referrerPolicy="no-referrer"
         />
         <h2 className="text-2xl font-bold text-zinc-900">Bentornato</h2>
+        <p className="text-zinc-500 text-sm mt-1">Accedi al tuo account</p>
       </div>
-      {message && <p className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm">{message}</p>}
+
+      <div className="flex p-1 bg-zinc-100 rounded-2xl mb-6">
+        <button
+          onClick={() => setRole('customer')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'customer' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+        >
+          Cliente
+        </button>
+        <button
+          onClick={() => setRole('merchant')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'merchant' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+        >
+          Commerciante
+        </button>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-            required
-          />
-        </div>
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium text-zinc-700">Password</label>
-            <button 
-              type="button"
-              onClick={() => {
-                setError('');
-                setMessage('');
-                setForgotPassword(true);
-              }}
-              className="text-xs text-emerald-600 hover:underline"
-            >
-              Dimenticata?
-            </button>
-          </div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-            required
-          />
-        </div>
+        {role === 'customer' ? (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Numero Tessera (es. #123456)</label>
+              <input
+                type="text"
+                value={loyaltyCode}
+                onChange={(e) => setLoyaltyCode(e.target.value)}
+                placeholder="#000000"
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Codice PIN</label>
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="Il tuo codice segreto"
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                required
+              />
+            </div>
+          </>
+        )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+          disabled={loading}
+          className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          <LogIn className="w-5 h-5" />
+          {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
           Accedi
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-zinc-500">
-        Non hai un account? <Link to="/signup" className="text-emerald-600 font-medium hover:underline">Registrati</Link>
+        Non hai un account? <Link to="/signup" className="text-emerald-600 font-medium hover:underline">Registrati ora</Link>
       </p>
     </motion.div>
   );
@@ -669,8 +599,11 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [consent, setConsent] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
+  const [signupStep, setSignupStep] = useState<1 | 2>(1); // 1: Initial/Generate, 2: Set PIN (for customer)
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [pin, setPin] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -687,7 +620,67 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     checkMerchant();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleGenerateCode = () => {
+    const digits = Math.floor(100000 + Math.random() * 900000);
+    setGeneratedCode(`#${digits}`);
+    setSignupStep(2);
+  };
+
+  const handleCustomerSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!consent) {
+      setError('È necessario acconsentire al trattamento dei dati per procedere.');
+      return;
+    }
+
+    if (pin.length < 4) {
+      setError('Il PIN deve essere di almeno 4 cifre.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Generate a fake email based on the loyalty code
+      const fakeEmail = `${generatedCode.replace('#', '')}@ifone.lab`;
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: fakeEmail,
+        password: pin,
+        options: {
+          data: {
+            role: 'customer',
+            loyalty_code: generatedCode,
+            first_name: 'Cliente',
+            last_name: generatedCode
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        setSuccessData({
+          loyalty_code: generatedCode,
+          session: authData.session
+        });
+
+        if (authData.session) {
+          setTimeout(() => {
+            onLogin();
+            navigate('/');
+          }, 3000);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Errore durante la registrazione');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleMerchantSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -697,26 +690,25 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     }
 
     // Double check on submission
-    if (role === 'merchant') {
-      const { count } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'merchant');
-      
-      if (count && count > 0) {
-        setError('Esiste già un account commerciante. Registrati come cliente.');
-        setMerchantExists(true);
-        setRole('customer');
-        return;
-      }
+    const { count } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'merchant');
+    
+    if (count && count > 0) {
+      setError('Esiste già un account commerciante. Registrati come cliente.');
+      setMerchantExists(true);
+      setRole('customer');
+      return;
     }
+
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            role: role,
+            role: 'merchant',
             first_name: firstName,
             last_name: lastName
           }
@@ -726,20 +718,16 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Con il trigger SQL, il profilo viene creato istantaneamente.
-        // Se la conferma email è disattivata, authData.session sarà presente.
         setSuccessData({
           email: email,
           session: authData.session
         });
 
-        // Login immediato se abbiamo la sessione
         if (authData.session) {
-          onLogin();
-          navigate('/');
-        } else {
-          // Caso in cui la conferma email sia ancora attiva per errore
-          setMessage('Registrazione completata! Controlla la tua email.');
+          setTimeout(() => {
+            onLogin();
+            navigate('/');
+          }, 3000);
         }
       }
     } catch (err: any) {
@@ -762,6 +750,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
         />
         <h2 className="text-2xl font-bold text-zinc-900">Crea Account</h2>
       </div>
+
       {successData ? (
         <div className="text-center py-4">
           <ShieldCheck className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
@@ -771,7 +760,8 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
             <div className="mt-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
               <p className="text-sm text-zinc-500 mb-2">Il tuo Codice Tessera Fedeltà:</p>
               <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.loyalty_code}</p>
-              <div className="mt-4 flex justify-center overflow-hidden">
+              <p className="text-xs text-zinc-400 mt-2 italic">Conserva questo codice e il PIN creato per accedere.</p>
+              <div className="mt-4 flex justify-center overflow-hidden" id="signup-barcode">
                 <Barcode 
                   value={successData.loyalty_code} 
                   width={1.5} 
@@ -780,6 +770,34 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                   background="#f9fafb"
                 />
               </div>
+              <button
+                onClick={() => {
+                  const svg = document.querySelector('#signup-barcode svg');
+                  if (svg) {
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = () => {
+                      canvas.width = img.width;
+                      canvas.height = img.height;
+                      ctx?.drawImage(img, 0, 0);
+                      const pngUrl = canvas.toDataURL('image/png');
+                      const downloadLink = document.createElement('a');
+                      downloadLink.href = pngUrl;
+                      downloadLink.download = `tessera-ifone-${successData.loyalty_code}.png`;
+                      document.body.appendChild(downloadLink);
+                      downloadLink.click();
+                      document.body.removeChild(downloadLink);
+                    };
+                    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                  }
+                }}
+                className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-zinc-600 border border-zinc-200 rounded-xl hover:bg-white transition-all"
+              >
+                <Download className="w-4 h-4" />
+                Salva Tessera
+              </button>
             </div>
           )}
           
@@ -799,7 +817,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           ) : (
             <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100">
               <p className="text-sm text-amber-800 font-medium">
-                Controlla la tua email per confermare l'account e poter accedere.
+                {role === 'merchant' ? "Controlla la tua email per confermare l'account." : "Registrazione completata con successo."}
               </p>
               <Link to="/login" className="mt-4 inline-block text-zinc-900 font-bold hover:underline">
                 Vai al Login
@@ -808,104 +826,188 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           )}
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Nome</label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Cognome</label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-              required
-            />
-          </div>
-          {!merchantExists && (
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-2">Tipo di Account</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole('customer')}
-                  className={`py-3 rounded-xl border text-sm font-medium transition-all ${role === 'customer' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
-                >
-                  Cliente
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('merchant')}
-                  className={`py-3 rounded-xl border text-sm font-medium transition-all ${role === 'merchant' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
-                >
-                  Commerciante
-                </button>
-              </div>
+        <div className="space-y-6">
+          {!merchantExists && signupStep === 1 && (
+            <div className="flex p-1 bg-zinc-100 rounded-2xl">
+              <button
+                onClick={() => setRole('customer')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'customer' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+              >
+                Cliente
+              </button>
+              <button
+                onClick={() => setRole('merchant')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'merchant' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+              >
+                Commerciante
+              </button>
             </div>
           )}
 
-          <div className="flex flex-col gap-2 pt-2">
-            <div className="flex items-start gap-3">
-              <input
-                id="consent"
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                required
-              />
-              <label htmlFor="consent" className="text-xs text-zinc-500 leading-relaxed cursor-pointer select-none">
-                Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione della carta fedeltà digitale iFoneLab.
-              </label>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowPrivacyModal(true)}
-              className="text-xs text-emerald-600 font-medium hover:underline text-left pl-7"
-            >
-              Scopri di più sulla PRIVACY POLICY
-            </button>
-          </div>
+          {role === 'customer' ? (
+            <div className="space-y-6">
+              {signupStep === 1 ? (
+                <div className="text-center space-y-4">
+                  <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
+                    <QrCode className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+                    <h3 className="text-lg font-bold text-emerald-900">Benvenuto in iFoneLab</h3>
+                    <p className="text-sm text-emerald-700 mt-2">
+                      Clicca sul pulsante qui sotto per generare il tuo codice fedeltà unico e iniziare a raccogliere punti.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleGenerateCode}
+                    className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-zinc-200"
+                  >
+                    Genera Codice
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleCustomerSignup} className="space-y-4">
+                  <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 text-center">
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Il Tuo Codice</p>
+                    <p className="text-3xl font-black text-zinc-900 tracking-tighter">{generatedCode}</p>
+                  </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            type="submit"
-            className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <UserPlus className="w-5 h-5" />
-            Registrati
-          </button>
-        </form>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-zinc-700">Crea il tuo PIN di accesso</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Inserisci un PIN numerico"
+                      className="w-full px-4 py-4 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-center text-2xl tracking-[1em] font-bold"
+                      required
+                    />
+                    <p className="text-[10px] text-zinc-400 text-center">Usa questo PIN insieme al codice {generatedCode} per accedere in futuro.</p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div className="flex items-start gap-3">
+                      <input
+                        id="consent-customer"
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(e) => setConsent(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        required
+                      />
+                      <label htmlFor="consent-customer" className="text-[10px] text-zinc-500 leading-relaxed cursor-pointer select-none">
+                        Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione della carta fedeltà digitale iFoneLab.
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPrivacyModal(true)}
+                      className="text-[10px] text-emerald-600 font-bold hover:underline text-left pl-7 uppercase tracking-wider"
+                    >
+                      Privacy Policy
+                    </button>
+                  </div>
+
+                  {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
+                  
+                  <button
+                    type="submit"
+                    disabled={isGenerating}
+                    className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isGenerating ? 'Creazione in corso...' : 'Completa Registrazione'}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setSignupStep(1)}
+                    className="w-full text-zinc-400 text-xs font-bold hover:text-zinc-600 transition-colors"
+                  >
+                    Torna indietro
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleMerchantSignup} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Nome</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1">Cognome</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex items-start gap-3">
+                  <input
+                    id="consent-merchant"
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    required
+                  />
+                  <label htmlFor="consent-merchant" className="text-xs text-zinc-500 leading-relaxed cursor-pointer select-none">
+                    Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione dell'account commerciante iFoneLab.
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacyModal(true)}
+                  className="text-xs text-emerald-600 font-medium hover:underline text-left pl-7"
+                >
+                  Privacy Policy
+                </button>
+              </div>
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              <button
+                type="submit"
+                className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <UserPlus className="w-5 h-5" />
+                Registrati come Commerciante
+              </button>
+            </form>
+          )}
+        </div>
       )}
+
       {!successData && (
         <p className="mt-6 text-center text-sm text-zinc-500">
           Hai già un account? <Link to="/login" className="text-emerald-600 font-medium hover:underline">Accedi</Link>
@@ -1189,7 +1291,7 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
       >
         <h3 className="text-lg font-bold text-zinc-900 mb-2">Il Tuo Codice</h3>
         <p className="text-zinc-500 text-sm mb-6">Mostra questo codice al commerciante per ricevere punti</p>
-        <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100 w-full overflow-hidden">
+        <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100 w-full overflow-hidden" id="dashboard-barcode">
           {loyaltyCode ? (
             <div className="flex justify-center">
               <Barcode 
@@ -1206,6 +1308,34 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
             </div>
           )}
         </div>
+        <button
+          onClick={() => {
+            const svg = document.querySelector('#dashboard-barcode svg');
+            if (svg) {
+              const svgData = new XMLSerializer().serializeToString(svg);
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              const img = new Image();
+              img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx?.drawImage(img, 0, 0);
+                const pngUrl = canvas.toDataURL('image/png');
+                const downloadLink = document.createElement('a');
+                downloadLink.href = pngUrl;
+                downloadLink.download = `tessera-ifone-${loyaltyCode}.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+              };
+              img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+            }
+          }}
+          className="mt-4 w-full py-2 flex items-center justify-center gap-2 text-xs font-bold text-zinc-600 border border-zinc-200 rounded-xl hover:bg-white transition-all"
+        >
+          <Download className="w-4 h-4" />
+          Salva Tessera
+        </button>
         <p className="mt-4 font-mono text-lg font-bold text-zinc-900">{loyaltyCode}</p>
       </motion.div>
 
