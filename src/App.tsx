@@ -615,6 +615,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       
       if (!error && count && count > 0) {
         setMerchantExists(true);
+        setRole('customer');
       }
     };
     checkMerchant();
@@ -844,7 +845,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           )}
 
-          {role === 'customer' ? (
+          {(role === 'customer' || merchantExists) ? (
             <div className="space-y-6">
               {signupStep === 1 ? (
                 <div className="text-center space-y-4">
