@@ -858,6 +858,10 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
 
                   {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
                   
+                  <p className="text-[10px] text-amber-600 font-bold text-center leading-tight uppercase mb-2">
+                    Si consiglia di fare uno screenshot e di salvarsi i dati della tessera e il PIN. Senza quelli non sarà più possibile accedere.
+                  </p>
+                  
                   <button
                     type="submit"
                     disabled={isGenerating}
