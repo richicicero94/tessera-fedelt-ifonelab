@@ -161,11 +161,11 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      setError('Le password non coincidono');
+      setError('I PIN non coincidono');
       return;
     }
     if (password.length < 6) {
-      setError('La password deve essere di almeno 6 caratteri');
+      setError('Il PIN deve essere di almeno 6 caratteri');
       return;
     }
 
@@ -174,7 +174,7 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      setMessage('Password aggiornata con successo! Ora puoi usare la nuova password.');
+      setMessage('PIN aggiornato con successo! Ora puoi usare il nuovo PIN.');
       setTimeout(() => {
         onClose();
         window.location.hash = '';
@@ -197,7 +197,7 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
           <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-bold text-zinc-900">Nuova Password</h3>
+          <h3 className="text-xl font-bold text-zinc-900">Nuovo PIN</h3>
         </div>
 
         {message ? (
@@ -207,11 +207,11 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
         ) : (
           <form onSubmit={handleReset} className="space-y-4">
             <p className="text-sm text-zinc-500 mb-4">
-              Inserisci la tua nuova password per completare il recupero dell'account.
+              Inserisci il tuo nuovo PIN per completare il recupero dell'account.
             </p>
             
             <div>
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Nuova Password</label>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Nuovo PIN</label>
               <input
                 type="password"
                 value={password}
@@ -222,7 +222,7 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Conferma Password</label>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Conferma PIN</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -239,7 +239,7 @@ const ResetPasswordModal = ({ onClose }: { onClose: () => void }) => {
               disabled={isUpdating}
               className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all disabled:opacity-50"
             >
-              {isUpdating ? 'Aggiornamento...' : 'Salva Nuova Password'}
+              {isUpdating ? 'Aggiornamento...' : 'Salva Nuovo PIN'}
             </button>
           </form>
         )}
@@ -355,11 +355,8 @@ const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => 
 };
 
 const Login = ({ onLogin }: { onLogin: () => void }) => {
-  const [loyaltyCode, setLoyaltyCode] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'customer' | 'merchant'>('customer');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -370,34 +367,32 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
     setLoading(true);
 
     try {
-      if (role === 'customer') {
-        // 1. Find the user by loyalty code
+      let emailToUse = identifier;
+      
+      // Check if it's a loyalty code (doesn't contain @)
+      if (!identifier.includes('@')) {
+        const formattedCode = identifier.startsWith('#') ? identifier : `#${identifier}`;
+        
+        // Find the user by loyalty code
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('email')
-          .eq('loyalty_code', loyaltyCode.startsWith('#') ? loyaltyCode : `#${loyaltyCode}`)
+          .eq('loyalty_code', formattedCode)
           .single();
 
         if (userError || !userData) {
-          throw new Error('Numero tessera non trovato.');
+          throw new Error('Numero tessera o email non trovati.');
         }
-
-        // 2. Sign in with the found email and the provided PIN
-        const { error: authError } = await supabase.auth.signInWithPassword({
-          email: userData.email,
-          password: pin,
-        });
-
-        if (authError) throw authError;
-      } else {
-        // Merchant login with email and password
-        const { error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (authError) throw authError;
+        emailToUse = userData.email;
       }
+
+      // Sign in with the identified email and the provided PIN
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: emailToUse,
+        password: pin,
+      });
+
+      if (authError) throw authError;
 
       onLogin();
       navigate('/');
@@ -424,72 +419,30 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
         <h2 className="text-2xl font-bold text-zinc-900">Bentornato</h2>
         <p className="text-zinc-500 text-sm mt-1">Accedi al tuo account</p>
       </div>
-
-      <div className="flex p-1 bg-zinc-100 rounded-2xl mb-6">
-        <button
-          onClick={() => setRole('customer')}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'customer' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
-        >
-          Cliente
-        </button>
-        <button
-          onClick={() => setRole('merchant')}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${role === 'merchant' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
-        >
-          Commerciante
-        </button>
-      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        {role === 'customer' ? (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Numero Tessera (es. #123456)</label>
-              <input
-                type="text"
-                value={loyaltyCode}
-                onChange={(e) => setLoyaltyCode(e.target.value)}
-                placeholder="#000000"
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Codice PIN</label>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="Il tuo codice segreto"
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                required
-              />
-            </div>
-          </>
-        )}
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 mb-1">Numero Tessera</label>
+          <input
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="Inserisci il tuo codice tessera"
+            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 mb-1">PIN</label>
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="Il tuo codice segreto"
+            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            required
+          />
+        </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
@@ -541,7 +494,7 @@ const PrivacyModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => voi
                 <h4 className="font-bold text-zinc-900 mb-1">Quali dati conserviamo?</h4>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Email</li>
-                  <li>Password (crittografata e non visibile nemmeno a noi)</li>
+                  <li>PIN (crittografato e non visibile nemmeno a noi)</li>
                   <li>Nome e Cognome</li>
                   <li>Codice tessera fedeltà</li>
                 </ul>
@@ -963,7 +916,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">PIN</label>
                 <input
                   type="password"
                   value={password}
