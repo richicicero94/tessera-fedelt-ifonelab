@@ -584,11 +584,6 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     e.preventDefault();
     setError('');
 
-    if (!consent) {
-      setError('È necessario acconsentire al trattamento dei dati per procedere.');
-      return;
-    }
-
     if (pin.length < 4) {
       setError('Il PIN deve essere di almeno 4 cifre.');
       return;
@@ -838,27 +833,15 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                     <p className="text-[10px] text-zinc-400 text-center">Usa questo PIN insieme al codice {generatedCode} per accedere in futuro.</p>
                   </div>
 
-                  <div className="flex flex-col gap-2 pt-2">
-                    <div className="flex items-start gap-3">
-                      <input
-                        id="consent-customer"
-                        type="checkbox"
-                        checked={consent}
-                        onChange={(e) => setConsent(e.target.checked)}
-                        className="mt-1 w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                        required
-                      />
-                      <label htmlFor="consent-customer" className="text-[10px] text-zinc-500 leading-relaxed cursor-pointer select-none">
-                        Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) per l'attivazione e la gestione della carta fedeltà digitale iFoneLab.
-                      </label>
+                  <div className="pt-2">
+                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex gap-3 items-start">
+                      <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600 shrink-0">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">
+                        La generazione della tessera è <strong>totalmente anonima</strong>. Non vengono conservati dati personali o sensibili dei clienti; il sistema utilizza solo il codice generato e il tuo PIN per la gestione dei punti.
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowPrivacyModal(true)}
-                      className="text-[10px] text-emerald-600 font-bold hover:underline text-left pl-7 uppercase tracking-wider"
-                    >
-                      Privacy Policy
-                    </button>
                   </div>
 
                   {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
