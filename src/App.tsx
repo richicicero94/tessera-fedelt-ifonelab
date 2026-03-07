@@ -433,7 +433,7 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">PIN</label>
+          <label className="block text-sm font-medium text-zinc-700 mb-1">PIN o Password</label>
           <input
             type="password"
             value={pin}
@@ -591,7 +591,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     setError('');
 
     if (pin.length < 4) {
-      setError('Il PIN deve essere di almeno 4 cifre.');
+      setError('La password deve essere di almeno 4 caratteri.');
       return;
     }
 
@@ -831,18 +831,16 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-sm font-bold text-zinc-700">Crea il tuo PIN di accesso</label>
+                    <label className="block text-sm font-bold text-zinc-700">Crea la tua Password di accesso</label>
                     <input
-                      type="password"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                      type="text"
                       value={pin}
-                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Inserisci un PIN numerico"
-                      className="w-full px-4 py-4 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-center text-2xl tracking-[1em] font-bold"
+                      onChange={(e) => setPin(e.target.value)}
+                      placeholder="Inserisci la tua password"
+                      className="w-full px-4 py-4 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-center text-2xl tracking-[0.1em] font-bold"
                       required
                     />
-                    <p className="text-[10px] text-zinc-400 text-center">Usa questo PIN insieme al codice {generatedCode} per accedere in futuro.</p>
+                    <p className="text-[10px] text-zinc-400 text-center">Usa questa password insieme al codice {generatedCode} per accedere in futuro.</p>
                   </div>
 
                   <div className="pt-2">
@@ -851,7 +849,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                         <ShieldCheck className="w-4 h-4" />
                       </div>
                       <p className="text-[11px] text-zinc-500 leading-relaxed">
-                        La generazione della tessera è <strong>totalmente anonima</strong>. Non vengono conservati dati personali o sensibili dei clienti; il sistema utilizza solo il codice generato e il tuo PIN per la gestione dei punti.
+                        La generazione della tessera è <strong>totalmente anonima</strong>. Non vengono conservati dati personali o sensibili dei clienti; il sistema utilizza solo il codice generato e la tua password per la gestione dei punti.
                       </p>
                     </div>
                   </div>
@@ -859,7 +857,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                   {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
                   
                   <p className="text-[10px] text-amber-600 font-bold text-center leading-tight uppercase mb-2">
-                    Si consiglia di fare uno screenshot e di salvarsi i dati della tessera e il PIN. Senza quelli non sarà più possibile accedere.
+                    Si consiglia di fare uno screenshot e di salvarsi i dati della tessera e la password. Senza quelli non sarà più possibile accedere.
                   </p>
                   
                   <button
