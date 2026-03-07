@@ -456,6 +456,12 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
       <p className="mt-6 text-center text-sm text-zinc-500">
         Non hai un account? <Link to="/signup" className="text-emerald-600 font-medium hover:underline">Registrati ora</Link>
       </p>
+      <div className="mt-4 p-3 bg-zinc-50 rounded-2xl border border-zinc-100 flex gap-3 items-start">
+        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+        <p className="text-[10px] text-zinc-500 leading-relaxed text-left">
+          La generazione della carta è totalmente anonima e non vengono conservati dati personali e sensibili dei clienti.
+        </p>
+      </div>
     </motion.div>
   );
 };
@@ -803,6 +809,12 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                     <p className="text-sm text-emerald-700 mt-2">
                       Clicca sul pulsante qui sotto per generare il tuo codice fedeltà unico e iniziare a raccogliere punti.
                     </p>
+                    <div className="mt-4 pt-4 border-t border-emerald-200/50 flex gap-2 items-start text-left">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-emerald-800 leading-relaxed">
+                        La generazione della carta è totalmente anonima e non vengono conservati dati personali e sensibili dei clienti.
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={handleGenerateCode}
