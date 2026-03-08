@@ -360,6 +360,7 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const isEmail = identifier.includes('@');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,16 +438,23 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
             required
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">PIN o Password</label>
-          <input
-            type="password"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            placeholder="La tua password segreta (opzionale per clienti)"
-            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-          />
-        </div>
+        {isEmail && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="overflow-hidden"
+          >
+            <label className="block text-sm font-medium text-zinc-700 mb-1">PIN o Password</label>
+            <input
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="La tua password segreta"
+              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              required={isEmail}
+            />
+          </motion.div>
+        )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
