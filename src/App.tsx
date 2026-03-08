@@ -846,7 +846,16 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                 <div className="space-y-6">
                   <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 text-center">
                     <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Il Tuo Numero Cliente / Tessera</p>
-                    <p className="text-3xl font-black text-zinc-900 tracking-tighter">{generatedCode}</p>
+                    <p className="text-3xl font-black text-zinc-900 tracking-tighter mb-4">{generatedCode}</p>
+                    <div className="flex justify-center opacity-50 scale-75 origin-center">
+                      <Barcode 
+                        value={generatedCode} 
+                        width={1.5} 
+                        height={50} 
+                        displayValue={false}
+                        background="#f9fafb"
+                      />
+                    </div>
                   </div>
 
                   <div className="pt-2">
