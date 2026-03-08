@@ -715,7 +715,12 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
 
       {successData ? (
         <div className="text-center py-4">
-          <ShieldCheck className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+          <img 
+            src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+            alt="iFoneLab Logo" 
+            className="w-20 h-20 rounded-2xl object-cover shadow-lg mx-auto mb-4"
+            referrerPolicy="no-referrer"
+          />
           <p className="text-lg font-medium text-zinc-900">Registrazione completata!</p>
           
           {successData.loyalty_code && (
@@ -811,7 +816,12 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
               {signupStep === 1 ? (
                 <div className="text-center space-y-4">
                   <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
-                    <QrCode className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+                    <img 
+                      src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+                      alt="iFoneLab Logo" 
+                      className="w-16 h-16 rounded-2xl object-cover shadow-md mx-auto mb-3"
+                      referrerPolicy="no-referrer"
+                    />
                     <h3 className="text-lg font-bold text-emerald-900">Benvenuto in iFoneLab</h3>
                     <p className="text-sm text-emerald-700 mt-2">
                       Clicca sul pulsante qui sotto per generare il tuo numero cliente unico e iniziare a raccogliere punti.
@@ -967,93 +977,8 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
 const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfile, refreshProfile: () => void, onLogout: () => void }) => {
   const points = user.points || 0;
   const loyaltyCode = user.loyalty_code || '';
-  const [phone, setPhone] = useState(user.phone || '');
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editFirstName, setEditFirstName] = useState(user.first_name || '');
-  const [editLastName, setEditLastName] = useState(user.last_name || '');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
-  const handleUpdatePhone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsUpdating(true);
-    setMessage(null);
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ phone })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setMessage({ text: 'Ora sei abilitato a ricevere le nostre promozioni', type: 'success' });
-      refreshProfile();
-    } catch (err) {
-      setMessage({ text: 'Errore durante il salvataggio.', type: 'error' });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleUpdateName = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          first_name: editFirstName, 
-          last_name: editLastName 
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      setShowEditModal(false);
-      refreshProfile();
-      setMessage({ text: 'Profilo aggiornato con successo!', type: 'success' });
-    } catch (err) {
-      console.error(err);
-      setMessage({ text: 'Errore durante l\'aggiornamento.', type: 'error' });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    const confirmDelete = confirm('Sei sicuro di voler richiedere l\'eliminazione definitiva del tuo account? Il commerciante riceverà la tua richiesta e procederà alla cancellazione dei tuoi dati.');
-    if (!confirmDelete) return;
-
-    setIsDeleting(true);
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ deletion_requested: true })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      refreshProfile();
-      setMessage({ text: 'Richiesta di eliminazione inviata. Il tuo account è ora in fase di cancellazione.', type: 'success' });
-    } catch (err: any) {
-      console.error(err);
-      alert('Errore durante l\'invio della richiesta: ' + (err.message || 'Errore sconosciuto'));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   return (
     <div className="max-w-md mx-auto space-y-6 relative">
@@ -1089,63 +1014,6 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
 
       <div className="flex justify-between items-center px-2">
         <h2 className="text-xl font-bold text-zinc-900">La Tua Area</h2>
-        <div className="relative">
-          <button 
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-zinc-100 rounded-full transition-colors flex items-center gap-1 text-zinc-600"
-          >
-            <span className="text-xs font-bold uppercase tracking-wider">Modifica</span>
-            <MoreVertical className="w-5 h-5" />
-          </button>
-          
-          <AnimatePresence>
-            {showMenu && (
-              <>
-                <div 
-                  className="fixed inset-0 z-30" 
-                  onClick={() => setShowMenu(false)}
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 z-40"
-                >
-                  <button
-                    onClick={() => {
-                      setShowEditModal(true);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Modifica Profilo
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowPrivacyModal(true);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    Privacy Policy
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleDeleteAccount();
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Elimina Account
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
       </div>
 
       <motion.div
@@ -1159,9 +1027,13 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
               <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1">Punti Fedeltà</p>
               <h2 className="text-6xl font-bold tracking-tighter">{points}</h2>
             </div>
-            <div className="text-right">
-              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-1">Numero Cliente</p>
-              <p className="text-sm font-bold text-emerald-400">{user.first_name} {user.last_name}</p>
+            <div className="text-right flex flex-col items-end">
+              <img 
+                src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+                alt="iFoneLab Logo" 
+                className="w-10 h-10 rounded-xl object-cover shadow-sm"
+                referrerPolicy="no-referrer"
+              />
             </div>
           </div>
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
@@ -1349,60 +1221,6 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
           <p className="text-zinc-900 font-semibold">Oggi</p>
         </div>
       </div>
-
-      <PrivacyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
-
-      <AnimatePresence>
-        {showEditModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative"
-            >
-              <button 
-                onClick={() => setShowEditModal(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-zinc-100 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6 text-zinc-400" />
-              </button>
-
-              <h3 className="text-xl font-bold text-zinc-900 mb-6">Modifica Profilo</h3>
-
-              <form onSubmit={handleUpdateName} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">Nome</label>
-                  <input
-                    type="text"
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-1">Cognome</label>
-                  <input
-                    type="text"
-                    value={editLastName}
-                    onChange={(e) => setEditLastName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isUpdating}
-                  className="w-full bg-zinc-900 text-white py-3 rounded-xl font-semibold hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                >
-                  {isUpdating ? 'Salvataggio...' : 'Salva Modifiche'}
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
@@ -1614,8 +1432,13 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
     <div className="max-w-md mx-auto space-y-6">
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100">
         <div className="flex justify-between items-start mb-6">
-          <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-            <Scan className="w-6 h-6 text-emerald-600" />
+          <h2 className="text-2xl font-bold text-zinc-900 flex items-center gap-3">
+            <img 
+              src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+              alt="iFoneLab Logo" 
+              className="w-10 h-10 rounded-xl object-cover shadow-sm"
+              referrerPolicy="no-referrer"
+            />
             Pannello Commerciante
           </h2>
           <div className="relative">
