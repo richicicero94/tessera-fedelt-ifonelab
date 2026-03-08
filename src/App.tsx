@@ -373,6 +373,12 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
       
       // Check if it's a loyalty code (doesn't contain @)
       if (!identifier.includes('@')) {
+        // If it's a customer and no password provided, use default
+        if (!pin) {
+          passwordToUse = 'Ifonelab';
+          setPin('Ifonelab');
+        }
+        
         const formattedCode = identifier.startsWith('#') ? identifier : `#${identifier}`;
         
         // Find the user by loyalty code
@@ -386,10 +392,6 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           throw new Error('Numero tessera o email non trovati.');
         }
         emailToUse = userData.email;
-        // If it's a customer and no password provided, use default
-        if (!pin) {
-          passwordToUse = 'Ifonelab';
-        }
       }
 
       // Sign in with the identified email and the provided PIN
@@ -428,9 +430,12 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">Numero Cliente / Tessera</label>
+          <label htmlFor="username" className="block text-sm font-medium text-zinc-700 mb-1">Numero Cliente / Tessera</label>
           <input
+            id="username"
+            name="username"
             type="text"
+            autoComplete="username"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             placeholder="Inserisci il tuo numero cliente o tessera"
@@ -438,23 +443,29 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
             required
           />
         </div>
-        {isEmail && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="overflow-hidden"
-          >
-            <label className="block text-sm font-medium text-zinc-700 mb-1">PIN o Password</label>
-            <input
-              type="password"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="La tua password segreta"
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-              required={isEmail}
-            />
-          </motion.div>
-        )}
+        
+        <div className="space-y-1">
+          <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-1">
+            {isEmail ? 'Password' : 'PIN (Opzionale)'}
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder={isEmail ? "La tua password segreta" : "Lascia vuoto per 'Ifonelab'"}
+            className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            required={isEmail}
+          />
+          {!isEmail && (
+            <p className="text-[10px] text-zinc-400 italic px-1">
+              I clienti possono accedere usando solo il numero tessera.
+            </p>
+          )}
+        </div>
+
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
