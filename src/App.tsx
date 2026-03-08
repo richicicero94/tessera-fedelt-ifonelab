@@ -333,9 +333,6 @@ const Navbar = ({ user, onLogout }: { user: UserProfile | null, onLogout: () => 
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              {user.role === 'merchant' && (
-                <span className="hidden sm:inline text-sm text-zinc-500">{user.email}</span>
-              )}
               <button
                 onClick={onLogout}
                 className="flex items-center gap-1 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
