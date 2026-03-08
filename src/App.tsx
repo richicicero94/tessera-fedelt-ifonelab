@@ -571,7 +571,6 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState<any>(null);
-  const [signupStep, setSignupStep] = useState<1 | 2>(1); // 1: Initial/Generate, 2: Set PIN (for customer)
   const [generatedCode, setGeneratedCode] = useState('');
   const [pin, setPin] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -592,20 +591,21 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     checkMerchant();
   }, []);
 
-  const handleGenerateCode = () => {
-    const digits = Math.floor(100000 + Math.random() * 900000);
-    setGeneratedCode(`#${digits}`);
-    setSignupStep(2);
-  };
-
   const handleCustomerSignup = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     setError('');
 
     setIsGenerating(true);
     try {
+      let code = generatedCode;
+      if (!code) {
+        const digits = Math.floor(100000 + Math.random() * 900000);
+        code = `#${digits}`;
+        setGeneratedCode(code);
+      }
+
       // Generate a fake email based on the loyalty code
-      const fakeEmail = `${generatedCode.replace('#', '')}@ifonelab.customer`;
+      const fakeEmail = `${code.replace('#', '')}@ifonelab.customer`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: fakeEmail,
@@ -613,9 +613,9 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
         options: {
           data: {
             role: 'customer',
-            loyalty_code: generatedCode,
+            loyalty_code: code,
             first_name: 'Cliente',
-            last_name: generatedCode
+            last_name: code
           }
         }
       });
@@ -624,7 +624,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
 
       if (authData.user) {
         setSuccessData({
-          loyalty_code: generatedCode,
+          loyalty_code: code,
           session: authData.session
         });
 
@@ -723,7 +723,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           />
           <p className="text-lg font-medium text-zinc-900">Registrazione completata!</p>
           
-          {successData.loyalty_code && (
+          {successData.loyalty_code && role === 'merchant' && (
             <div className="mt-6 p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm">
               <p className="text-sm text-zinc-500 mb-2">Il tuo Numero Cliente / Tessera:</p>
               <p className="text-xl font-mono font-bold text-emerald-600 break-all mb-4">{successData.loyalty_code}</p>
@@ -796,7 +796,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          {!merchantExists && signupStep === 1 && (
+          {!merchantExists && (
             <div className="flex p-1 bg-zinc-100 rounded-2xl">
               <button
                 onClick={() => setRole('customer')}
@@ -814,86 +814,35 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           )}
 
           {(role === 'customer' || merchantExists) ? (
-            <div className="space-y-6">
-              {signupStep === 1 ? (
-                <div className="text-center space-y-4">
-                  <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
-                    <img 
-                      src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
-                      alt="iFoneLab Logo" 
-                      className="w-16 h-16 rounded-2xl object-cover shadow-md mx-auto mb-3"
-                      referrerPolicy="no-referrer"
-                    />
-                    <h3 className="text-lg font-bold text-emerald-900">Benvenuto in iFoneLab</h3>
-                    <p className="text-sm text-emerald-700 mt-2">
-                      Clicca sul pulsante qui sotto per generare il tuo numero cliente unico e iniziare a raccogliere punti.
-                    </p>
-                    <div className="mt-4 pt-4 border-t border-emerald-200/50 flex gap-2 items-start text-left">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <p className="text-[10px] text-emerald-800 leading-relaxed">
-                        La generazione della carta è totalmente anonima e non vengono conservati dati personali e sensibili dei clienti.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleGenerateCode}
-                    className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-zinc-200"
-                  >
-                    Genera Numero Cliente / Tessera
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="p-6 bg-white rounded-3xl border border-zinc-100 text-center shadow-sm">
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Il Tuo Numero Cliente / Tessera</p>
-                    <p className="text-3xl font-black text-zinc-900 tracking-tighter mb-6">{generatedCode}</p>
-                    <div className="flex justify-center p-4 rounded-2xl border border-zinc-50">
-                      <Barcode 
-                        value={generatedCode} 
-                        width={1.8} 
-                        height={100} 
-                        displayValue={true}
-                        fontSize={16}
-                        font="monospace"
-                        background="#ffffff"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 flex gap-3 items-start">
-                      <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600 shrink-0">
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <p className="text-[11px] text-zinc-500 leading-relaxed">
-                        La generazione della tessera è <strong>totalmente anonima</strong>. Segnati il numero della tessera per ri-effettuare l'accesso e verificare il tuo saldo punti.
-                      </p>
-                    </div>
-                  </div>
-
-                  {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
-                  
-                  <p className="text-[10px] text-amber-600 font-bold text-center leading-tight uppercase mb-2">
-                    Si consiglia di fare uno screenshot e di salvarsi il numero cliente. Senza quello non sarà più possibile accedere.
+            <div className="text-center space-y-4">
+              <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
+                <img 
+                  src="https://scontent-mxp2-1.xx.fbcdn.net/v/t39.30808-6/474502142_2055199634940862_3015110099841791121_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=Qf50nOuFni0Q7kNvwFvouTi&_nc_oc=AdloNG6fRgPTUL45SzWJIgOFgZHY6ffU3NlUZranveeoibBDdHJs2hOxicQcpjCROZQ&_nc_zt=23&_nc_ht=scontent-mxp2-1.xx&_nc_gid=ZIJLQHUjBHXbsbpDPgJlvw&_nc_ss=8&oh=00_AfwzrLQ8TSRP_50EZ9G7lzrl86ba3McY9Gcnfo4Lt8iCFw&oe=69ACE8E4" 
+                  alt="iFoneLab Logo" 
+                  className="w-16 h-16 rounded-2xl object-cover shadow-md mx-auto mb-3"
+                  referrerPolicy="no-referrer"
+                />
+                <h3 className="text-lg font-bold text-emerald-900">Benvenuto in iFoneLab</h3>
+                <p className="text-sm text-emerald-700 mt-2">
+                  Clicca sul pulsante qui sotto per attivare la tua tessera fedeltà digitale e iniziare a raccogliere punti.
+                </p>
+                <div className="mt-4 pt-4 border-t border-emerald-200/50 flex gap-2 items-start text-left">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-emerald-800 leading-relaxed">
+                    La generazione della carta è totalmente anonima e non vengono conservati dati personali e sensibili dei clienti.
                   </p>
-                  
-                  <button
-                    onClick={handleCustomerSignup}
-                    disabled={isGenerating}
-                    className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isGenerating ? 'Attivazione in corso...' : 'Attiva la tua tessera'}
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setSignupStep(1)}
-                    className="w-full text-zinc-400 text-xs font-bold hover:text-zinc-600 transition-colors"
-                  >
-                    Torna indietro
-                  </button>
                 </div>
-              )}
+              </div>
+              
+              {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
+
+              <button
+                onClick={handleCustomerSignup}
+                disabled={isGenerating}
+                className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-zinc-200 disabled:opacity-50"
+              >
+                {isGenerating ? 'Attivazione in corso...' : 'Attiva la tua tessera'}
+              </button>
             </div>
           ) : (
             <form onSubmit={handleMerchantSignup} className="space-y-4">
