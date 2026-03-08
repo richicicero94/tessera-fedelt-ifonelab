@@ -116,7 +116,7 @@ const EditCustomerModal = ({ customer, onClose, onUpdate }: { customer: any, onC
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Codice Tessera</label>
+            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1 ml-1">Numero Cliente / Tessera</label>
             <input
               type="text"
               value={loyaltyCode}
@@ -368,6 +368,7 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
 
     try {
       let emailToUse = identifier;
+      let passwordToUse = pin;
       
       // Check if it's a loyalty code (doesn't contain @)
       if (!identifier.includes('@')) {
@@ -384,12 +385,16 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           throw new Error('Numero tessera o email non trovati.');
         }
         emailToUse = userData.email;
+        // If it's a customer and no password provided, use default
+        if (!pin) {
+          passwordToUse = 'Ifonelab';
+        }
       }
 
       // Sign in with the identified email and the provided PIN
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: emailToUse,
-        password: pin,
+        password: passwordToUse,
       });
 
       if (authError) throw authError;
@@ -422,12 +427,12 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">Numero Tessera</label>
+          <label className="block text-sm font-medium text-zinc-700 mb-1">Numero Cliente / Tessera</label>
           <input
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="Inserisci il tuo codice tessera"
+            placeholder="Inserisci il tuo numero cliente o tessera"
             className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             required
           />
@@ -438,9 +443,8 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
             type="password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            placeholder="Il tuo codice segreto"
+            placeholder="La tua password segreta (opzionale per clienti)"
             className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-            required
           />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -502,7 +506,7 @@ const PrivacyModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => voi
                   <li>Email</li>
                   <li>PIN (crittografato e non visibile nemmeno a noi)</li>
                   <li>Nome e Cognome</li>
-                  <li>Codice tessera fedeltà</li>
+                  <li>Numero Cliente / Tessera</li>
                 </ul>
               </div>
 
@@ -586,14 +590,9 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     setSignupStep(2);
   };
 
-  const handleCustomerSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCustomerSignup = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
     setError('');
-
-    if (pin.length < 4) {
-      setError('La password deve essere di almeno 4 caratteri.');
-      return;
-    }
 
     setIsGenerating(true);
     try {
@@ -602,7 +601,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: fakeEmail,
-        password: pin,
+        password: 'Ifonelab',
         options: {
           data: {
             role: 'customer',
@@ -713,9 +712,9 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           
           {successData.loyalty_code && (
             <div className="mt-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
-              <p className="text-sm text-zinc-500 mb-2">Il tuo Codice Tessera Fedeltà:</p>
+              <p className="text-sm text-zinc-500 mb-2">Il tuo Numero Cliente / Tessera:</p>
               <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.loyalty_code}</p>
-              <p className="text-xs text-zinc-400 mt-2 italic">Conserva questo codice e il PIN creato per accedere.</p>
+              <p className="text-xs text-zinc-400 mt-2 italic">Conserva questo numero e la password creata per accedere.</p>
               <div className="mt-4 flex justify-center overflow-hidden" id="signup-barcode">
                 <Barcode 
                   value={successData.loyalty_code} 
@@ -807,7 +806,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                     <QrCode className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
                     <h3 className="text-lg font-bold text-emerald-900">Benvenuto in iFoneLab</h3>
                     <p className="text-sm text-emerald-700 mt-2">
-                      Clicca sul pulsante qui sotto per generare il tuo codice fedeltà unico e iniziare a raccogliere punti.
+                      Clicca sul pulsante qui sotto per generare il tuo numero cliente unico e iniziare a raccogliere punti.
                     </p>
                     <div className="mt-4 pt-4 border-t border-emerald-200/50 flex gap-2 items-start text-left">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -820,27 +819,14 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                     onClick={handleGenerateCode}
                     className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-zinc-200"
                   >
-                    Genera Codice
+                    Genera Numero Cliente / Tessera
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleCustomerSignup} className="space-y-4">
+                <div className="space-y-6">
                   <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 text-center">
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Il Tuo Codice</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Il Tuo Numero Cliente / Tessera</p>
                     <p className="text-3xl font-black text-zinc-900 tracking-tighter">{generatedCode}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-sm font-bold text-zinc-700">Crea la tua Password di accesso</label>
-                    <input
-                      type="text"
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value)}
-                      placeholder="Inserisci la tua password"
-                      className="w-full px-4 py-4 rounded-2xl border border-zinc-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-center text-2xl tracking-[0.1em] font-bold"
-                      required
-                    />
-                    <p className="text-[10px] text-zinc-400 text-center">Usa questa password insieme al codice {generatedCode} per accedere in futuro.</p>
                   </div>
 
                   <div className="pt-2">
@@ -849,7 +835,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                         <ShieldCheck className="w-4 h-4" />
                       </div>
                       <p className="text-[11px] text-zinc-500 leading-relaxed">
-                        La generazione della tessera è <strong>totalmente anonima</strong>. Non vengono conservati dati personali o sensibili dei clienti; il sistema utilizza solo il codice generato e la tua password per la gestione dei punti.
+                        La generazione della tessera è <strong>totalmente anonima</strong>. Segnati il numero della tessera per ri-effettuare l'accesso e verificare il tuo saldo punti.
                       </p>
                     </div>
                   </div>
@@ -857,15 +843,15 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                   {error && <p className="text-red-500 text-xs font-medium text-center">{error}</p>}
                   
                   <p className="text-[10px] text-amber-600 font-bold text-center leading-tight uppercase mb-2">
-                    Si consiglia di fare uno screenshot e di salvarsi i dati della tessera e la password. Senza quelli non sarà più possibile accedere.
+                    Si consiglia di fare uno screenshot e di salvarsi il numero cliente. Senza quello non sarà più possibile accedere.
                   </p>
                   
                   <button
-                    type="submit"
+                    onClick={handleCustomerSignup}
                     disabled={isGenerating}
                     className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {isGenerating ? 'Creazione in corso...' : 'Completa Registrazione'}
+                    {isGenerating ? 'Attivazione in corso...' : 'Attiva la tua tessera'}
                   </button>
                   
                   <button
@@ -875,7 +861,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                   >
                     Torna indietro
                   </button>
-                </form>
+                </div>
               )}
             </div>
           ) : (
@@ -1166,7 +1152,7 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
               <h2 className="text-6xl font-bold tracking-tighter">{points}</h2>
             </div>
             <div className="text-right">
-              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-1">Cliente</p>
+              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-1">Numero Cliente</p>
               <p className="text-sm font-bold text-emerald-400">{user.first_name} {user.last_name}</p>
             </div>
           </div>
@@ -1240,8 +1226,8 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
         transition={{ delay: 0.1 }}
         className="bg-white p-8 rounded-[2rem] shadow-sm border border-zinc-100 text-center"
       >
-        <h3 className="text-lg font-bold text-zinc-900 mb-2">Il Tuo Codice</h3>
-        <p className="text-zinc-500 text-sm mb-6">Mostra questo codice al commerciante per ricevere punti</p>
+        <h3 className="text-lg font-bold text-zinc-900 mb-2">Il Tuo Numero Cliente / Tessera</h3>
+        <p className="text-zinc-500 text-sm mb-6">Mostra questo numero cliente al commerciante per ricevere punti</p>
         <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100 w-full overflow-hidden" id="dashboard-barcode">
           {loyaltyCode ? (
             <div className="flex justify-center">
@@ -1255,7 +1241,7 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
             </div>
           ) : (
             <div className="w-[200px] h-[100px] flex items-center justify-center text-zinc-400 italic">
-              Codice non disponibile
+              Numero non disponibile
             </div>
           )}
         </div>
@@ -1287,7 +1273,10 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
           <Download className="w-4 h-4" />
           Salva Tessera
         </button>
-        <p className="mt-4 font-mono text-lg font-bold text-zinc-900">{loyaltyCode}</p>
+        <div className="mt-4">
+          <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Numero Cliente / Tessera</p>
+          <p className="font-mono text-lg font-bold text-zinc-900">{loyaltyCode}</p>
+        </div>
       </motion.div>
 
       <motion.div
@@ -1828,7 +1817,7 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Cerca per email o codice..."
+            placeholder="Cerca per email o numero cliente..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 text-sm rounded-xl border border-zinc-100 bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
@@ -1912,7 +1901,7 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
                       </div>
                 </div>
               </div>
-              <p className="text-[10px] font-mono text-zinc-400">{customer.loyalty_code?.substring(0, 18)}...</p>
+              <p className="text-[10px] font-mono text-zinc-400">N. Cliente: {customer.loyalty_code?.substring(0, 18)}...</p>
             </div>
           ))}
           {filteredCustomers.length === 0 && (
