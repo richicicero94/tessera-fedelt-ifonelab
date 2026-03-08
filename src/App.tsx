@@ -605,7 +605,7 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
     setIsGenerating(true);
     try {
       // Generate a fake email based on the loyalty code
-      const fakeEmail = `${generatedCode.replace('#', '')}@ifone.lab`;
+      const fakeEmail = `${generatedCode.replace('#', '')}@ifonelab.customer`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: fakeEmail,
@@ -733,7 +733,9 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                   value={successData.loyalty_code} 
                   width={1.5} 
                   height={60} 
+                  displayValue={true}
                   fontSize={14}
+                  font="monospace"
                   background="#f9fafb"
                 />
               </div>
@@ -1115,8 +1117,10 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
                 value={loyaltyCode} 
                 width={1.8} 
                 height={100} 
-                displayValue={false}
+                displayValue={true}
                 background="#f9fafb"
+                fontSize={16}
+                font="monospace"
               />
             </div>
           ) : (
