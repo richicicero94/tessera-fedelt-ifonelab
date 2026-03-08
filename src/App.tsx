@@ -379,19 +379,8 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           setPin('Ifonelab');
         }
         
-        const formattedCode = identifier.startsWith('#') ? identifier : `#${identifier}`;
-        
-        // Find the user by loyalty code
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('email')
-          .eq('loyalty_code', formattedCode)
-          .single();
-
-        if (userError || !userData) {
-          throw new Error('Numero tessera o email non trovati.');
-        }
-        emailToUse = userData.email;
+        const codeDigits = identifier.replace('#', '').trim();
+        emailToUse = `${codeDigits}@ifonelab.customer`;
       }
 
       // Sign in with the identified email and the provided PIN
