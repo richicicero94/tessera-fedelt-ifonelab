@@ -1247,6 +1247,7 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
   const [promotionText, setPromotionText] = useState(localStorage.getItem('promo_template') || '');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
+  const [scanSuccessData, setScanSuccessData] = useState<{ customerName: string, totalPoints: number } | null>(null);
 
   const saveTemplate = (text: string) => {
     setPromotionText(text);
@@ -1418,6 +1419,10 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
           }
 
           setMessage({ text: `Punti aggiornati con successo! Nuovo saldo: ${newPoints}`, type: 'success' });
+          setScanSuccessData({
+            customerName: `${customer.first_name} ${customer.last_name}`,
+            totalPoints: newPoints
+          });
           fetchCustomers(); // Refresh list
         } catch (err: any) {
           setMessage({ text: err.message || 'Errore durante l\'operazione', type: 'error' });
@@ -1632,6 +1637,35 @@ const MerchantDashboard = ({ user: merchantUser }: { user: UserProfile }) => {
                   Apri Chat Individuali (Alternativa)
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {scanSuccessData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl text-center relative"
+            >
+              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trophy className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-bold text-zinc-900 mb-2">{scanSuccessData.customerName}</h3>
+              <p className="text-zinc-500 mb-6">Punti aggiornati con successo!</p>
+              
+              <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 mb-8">
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1">Totale Punti Accumulati</p>
+                <p className="text-5xl font-black text-zinc-900 tracking-tighter">{scanSuccessData.totalPoints}</p>
+              </div>
+
+              <button
+                onClick={() => setScanSuccessData(null)}
+                className="w-full bg-zinc-900 text-white py-4 rounded-2xl font-bold hover:bg-zinc-800 transition-all"
+              >
+                Chiudi
+              </button>
             </motion.div>
           </div>
         )}
