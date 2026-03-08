@@ -724,21 +724,21 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
           <p className="text-lg font-medium text-zinc-900">Registrazione completata!</p>
           
           {successData.loyalty_code && (
-            <div className="mt-6 p-6 bg-zinc-50 rounded-2xl border border-zinc-100">
+            <div className="mt-6 p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm">
               <p className="text-sm text-zinc-500 mb-2">Il tuo Numero Cliente / Tessera:</p>
-              <p className="text-xl font-mono font-bold text-emerald-600 break-all">{successData.loyalty_code}</p>
-              <p className="text-xs text-zinc-400 mt-2 italic">Conserva questo numero e la password creata per accedere.</p>
-              <div className="mt-4 flex justify-center overflow-hidden" id="signup-barcode">
+              <p className="text-xl font-mono font-bold text-emerald-600 break-all mb-4">{successData.loyalty_code}</p>
+              <div className="mt-4 flex justify-center p-4 rounded-2xl border border-zinc-50 overflow-hidden" id="signup-barcode">
                 <Barcode 
                   value={successData.loyalty_code} 
-                  width={1.5} 
-                  height={60} 
+                  width={1.8} 
+                  height={100} 
                   displayValue={true}
-                  fontSize={14}
+                  fontSize={16}
                   font="monospace"
-                  background="#f9fafb"
+                  background="#ffffff"
                 />
               </div>
+              <p className="text-[10px] text-zinc-400 mt-4 italic">Conserva questo numero e la password creata per accedere.</p>
               <button
                 onClick={() => {
                   const svg = document.querySelector('#signup-barcode svg');
@@ -844,16 +844,18 @@ const Signup = ({ onLogin }: { onLogin: () => void }) => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 text-center">
+                  <div className="p-6 bg-white rounded-3xl border border-zinc-100 text-center shadow-sm">
                     <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Il Tuo Numero Cliente / Tessera</p>
-                    <p className="text-3xl font-black text-zinc-900 tracking-tighter mb-4">{generatedCode}</p>
-                    <div className="flex justify-center opacity-50 scale-75 origin-center">
+                    <p className="text-3xl font-black text-zinc-900 tracking-tighter mb-6">{generatedCode}</p>
+                    <div className="flex justify-center p-4 rounded-2xl border border-zinc-50">
                       <Barcode 
                         value={generatedCode} 
-                        width={1.5} 
-                        height={50} 
-                        displayValue={false}
-                        background="#f9fafb"
+                        width={1.8} 
+                        height={100} 
+                        displayValue={true}
+                        fontSize={16}
+                        font="monospace"
+                        background="#ffffff"
                       />
                     </div>
                   </div>
@@ -1119,7 +1121,7 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
       >
         <h3 className="text-lg font-bold text-zinc-900 mb-2">Il Tuo Numero Cliente / Tessera</h3>
         <p className="text-zinc-500 text-sm mb-6">Mostra questo numero cliente al commerciante per ricevere punti</p>
-        <div className="bg-zinc-50 p-6 rounded-3xl inline-block border border-zinc-100 w-full overflow-hidden" id="dashboard-barcode">
+        <div className="bg-white p-6 rounded-3xl inline-block border border-zinc-100 w-full overflow-hidden shadow-sm" id="dashboard-barcode">
           {loyaltyCode ? (
             <div className="flex justify-center">
               <Barcode 
@@ -1127,7 +1129,7 @@ const CustomerDashboard = ({ user, refreshProfile, onLogout }: { user: UserProfi
                 width={1.8} 
                 height={100} 
                 displayValue={true}
-                background="#f9fafb"
+                background="#ffffff"
                 fontSize={16}
                 font="monospace"
               />
